@@ -1,0 +1,24 @@
+name: RNA source snapshot
+on:
+  pull_request:
+    paths:
+      - .github/workflows/research-snapshot.yml
+permissions:
+  contents: read
+jobs:
+  snapshot:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: 4c94ffde4478ebea26e26a9ed4dca53044ceee3c
+          persist-credentials: false
+      - run: git archive --format=zip --output=source-snapshot.zip HEAD
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: rna-source-4c94ffde
+          path: source-snapshot.zip
+          if-no-files-found: error
+          retention-days: 7
