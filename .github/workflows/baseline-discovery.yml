@@ -1,0 +1,57 @@
+name: Matched OP3 baseline asset discovery
+on:
+  pull_request:
+    paths:
+      - .github/workflows/baseline-discovery.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: baseline-discovery-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  inspect:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Inspect public asset names and original notebook code only
+        run: |
+          python - <<'PY'
+          import urllib.request,urllib.parse,xml.etree.ElementTree as ET,json,pathlib,hashlib
+          out=pathlib.Path('baseline-discovery');out.mkdir()
+          manifest=[]
+          def get(url,cap):
+              with urllib.request.urlopen(url,timeout=45) as r:
+                  b=r.read(cap+1)
+                  if len(b)>cap:raise ValueError('bounded metadata request exceeded cap')
+              manifest.append({'url':url,'bytes':len(b),'sha256':hashlib.sha256(b).hexdigest()});return b
+          url='https://raw.githubusercontent.com/theislab/task-dge-perturbation-prediction-analysis/c034a665421af95e74b9eea2980e248cc9d57fd0/data_preprocessing/multiome_cell_type_reannotation.ipynb'
+          try:
+              nb=json.loads(get(url,16*1024**2))
+              code='\n\n'.join(''.join(c.get('source',[])) for c in nb['cells'] if c['cell_type']=='code')
+              (out/'multiome_annotation_code.py').write_text(code)
+          except Exception as e:manifest.append({'url':url,'error':str(e)})
+          for bucket,prefix in [('openproblems-data','resources/task_perturbation_prediction/'),('openproblems-bio','public/neurips-2023-competition/')]:
+              objects=[];token=None
+              for page in range(5):
+                  query={'list-type':'2','prefix':prefix,'max-keys':'1000'}
+                  if token:query['continuation-token']=token
+                  url='https://'+bucket+'.s3.amazonaws.com/?'+urllib.parse.urlencode(query)
+                  try:
+                      tree=ET.fromstring(get(url,4*1024**2));ns={'s':'http://s3.amazonaws.com/doc/2006-03-01/'}
+                      for node in tree.findall('s:Contents',ns):
+                          objects.append({child.tag.split('}')[-1]:child.text for child in node})
+                      token=tree.findtext('s:NextContinuationToken',namespaces=ns)
+                      if not token:break
+                  except Exception as e:manifest.append({'url':url,'error':str(e)});break
+              (out/(bucket+'_objects.json')).write_text(json.dumps(objects,indent=2))
+          (out/'manifest.json').write_text(json.dumps(manifest,indent=2))
+          print(json.dumps(manifest,indent=2))
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: baseline-discovery-${{ github.run_id }}
+          path: baseline-discovery/
+          if-no-files-found: error
+          retention-days: 7
