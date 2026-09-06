@@ -1,0 +1,65 @@
+name: OP3 upstream provenance
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - .github/workflows/op3-upstream.yml
+permissions:
+  contents: read
+jobs:
+  provenance:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.13.5'
+      - run: python -m pip install -r requirements.txt
+      - name: Download original public pseudobulk and inspect metadata only
+        run: |
+          python - <<'PY'
+          import urllib.request, pathlib, hashlib, json, h5py, pandas as pd
+          from tools.op3_inventory import read_column
+          out=pathlib.Path('runs/op3-upstream'); out.mkdir(parents=True,exist_ok=False)
+          url='https://openproblems-data.s3.amazonaws.com/resources/task_perturbation_prediction/datasets/neurips-2023-data/pseudobulk_filtered_with_uns.h5ad'
+          p=out/'pseudobulk_filtered_with_uns.h5ad'; size=0; digest=hashlib.sha256()
+          with urllib.request.urlopen(url,timeout=90) as r, p.open('xb') as f:
+              headers=dict(r.headers)
+              if int(r.headers.get('Content-Length','0'))>256*1024**2: raise RuntimeError('size cap')
+              while chunk:=r.read(1024**2):
+                  size+=len(chunk)
+                  if size>256*1024**2: raise RuntimeError('size cap')
+                  f.write(chunk);digest.update(chunk)
+          with h5py.File(p) as f:
+              obs=pd.DataFrame({k:read_column(v) for k,v in f['obs'].items()})
+              obs.to_csv(out/'original_obs.csv',index=False)
+              var=pd.DataFrame({k:read_column(v) for k,v in f['var'].items()})
+              var.to_csv(out/'original_var.csv',index=False)
+              meta={'source':url,'bytes':size,'sha256':digest.hexdigest(),'upstream_expected_hash_available':False,'headers':headers,'obs_shape':obs.shape,'obs_columns':list(obs),'var_shape':var.shape,'uns_keys':list(f['uns']),'matrix_values_read':False}
+              if 'donor_id' in obs and 'plate_name' in obs:
+                  meta['plate_donor_mapping']=obs[['plate_name','donor_id']].drop_duplicates().to_dict('records')
+          (out/'acquisition.json').write_text(json.dumps(meta,indent=2,default=str)+'\n')
+          print(json.dumps(meta,indent=2,default=str))
+          rev='994399c79048c4bb92118363839ec6a2d36afb8f'
+          paths=['src/pseudobulking/datasets/op3/standardization.py','src/deg/run_processing_pseudobulk.py','src/deg/ensembl_mapping.py','src/pseudobulking/common/pseudobulk.py','logs/op3/full/pseudobulk_op3_combined.log','src/configs/datasets.json','README.md']
+          sources=[]
+          for path in paths:
+              u=f'https://raw.githubusercontent.com/theislab/Chem-PerturBridge/{rev}/{path}'
+              try:
+                  with urllib.request.urlopen(u,timeout=30) as r: b=r.read(3*1024**2)
+                  dest=out/'upstream'/path;dest.parent.mkdir(parents=True,exist_ok=True);dest.write_bytes(b)
+                  sources.append({'url':u,'bytes':len(b),'sha256':hashlib.sha256(b).hexdigest()})
+              except Exception as e: sources.append({'url':u,'error':str(e)})
+          (out/'source_manifest.json').write_text(json.dumps(sources,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: op3-upstream-${{ github.run_id }}
+          path: runs/op3-upstream/
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
