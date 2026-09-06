@@ -1,0 +1,24 @@
+{
+  "upstream_file_sha256": "f9c33a0f06fae8c53b299d66e6b8926cb5d5117b96737b6dfce7ef718ceb79e2",
+  "processed_sha256": "8eaf7e63adc68029e88184726b8545bc3836c3ef2a25b9185dc4e8b819537e59",
+  "upstream_shape": [2197, 5317],
+  "processed_shape": [1813, 5288],
+  "mapped_rows": 1813,
+  "duplicate_keys": 0,
+  "drug_and_split_exact_match": true,
+  "nonnegative_integer_X": true,
+  "psbulk_counts_equals_pre_mapping_gene_sum": true,
+  "exactly_verified_unmerged_genes": 5288,
+  "nonzero_count_differences_for_exact_genes": 0,
+  "unverified_or_merged_genes": [],
+  "retained_count_fraction_quantiles": [0.9982641805252254, 0.9988907452082575, 0.9989939788885719, 0.9992147401245035, 0.99973318425533],
+  "donor_mapping_verified_from_original_row_metadata": {
+    "NeurIPS2023_010": "Donor 1", "NeurIPS2023_011": "Donor 1",
+    "NeurIPS2023_012": "Donor 2", "NeurIPS2023_013": "Donor 2",
+    "NeurIPS2023_014": "Donor 3", "NeurIPS2023_015": "Donor 3"
+  },
+  "unit": "sum of raw single-cell counts within plate/well/celltype, with downstream ID mapping/merging",
+  "gene_universe": "filtered upstream using all cell types and treatment conditions; fixed-release-universe retrospective analysis only",
+  "training_approval_scope": "descriptive log2CPM prediction on verified, unmerged genes using predefined split/control pools",
+  "approved_for_confirmatory_sota_claim": false
+}
