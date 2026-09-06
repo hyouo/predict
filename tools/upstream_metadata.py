@@ -15,12 +15,13 @@ from tools.op3_inventory import read_column
 
 URL = 'https://openproblems-data.s3.amazonaws.com/resources/task_perturbation_prediction/datasets/neurips-2023-data/pseudobulk_filtered_with_uns.h5ad'
 CAP = 512 * 1024 * 1024
+EXPECTED_SHA256 = "f9c33a0f06fae8c53b299d66e6b8926cb5d5117b96737b6dfce7ef718ceb79e2"
 
 def main():
     out = ROOT / 'runs/op3-upstream-audit'
     out.mkdir(parents=True, exist_ok=False)
     record = {'source_url': URL, 'max_bytes': CAP, 'started_utc': datetime.now(timezone.utc).isoformat(),
-              'prior_checksum_available': False, 'purpose': 'metadata_and_count_semantics_audit_only', 'trained_model': False}
+              'prior_checksum_available': True, 'expected_sha256': EXPECTED_SHA256, 'purpose': 'metadata_and_count_semantics_audit_only', 'trained_model': False}
     path = None
     try:
         with tempfile.NamedTemporaryFile(suffix='.h5ad', delete=False) as f:
@@ -34,6 +35,8 @@ def main():
                         raise ValueError('Upstream file exceeds 512 MiB cap')
                     f.write(chunk)
         record.update(bytes=size, sha256=sha256_file(path))
+        if record['sha256'] != EXPECTED_SHA256:
+            raise ValueError('Upstream OP3 SHA256 changed; refusing silent dataset drift')
         with h5py.File(path) as f:
             obs = pd.DataFrame({k: read_column(v) for k,v in f['obs'].items()})
             var = pd.DataFrame({k: read_column(v) for k,v in f['var'].items()})
@@ -51,6 +54,7 @@ def main():
             if 'donor_id' in obs:
                 cols=[k for k in ['plate_name','donor_id','library_id'] if k in obs]
                 record['donor_mapping']=obs[cols].drop_duplicates().to_dict('records')
+        record['component_sha256']={name:sha256_file(out/name) for name in ('upstream_obs.csv.gz','upstream_var.csv.gz','upstream_counts.npz')}
         record['completed']=True
     except Exception as e:
         record.update(completed=False, error=f'{type(e).__name__}: {e}')
