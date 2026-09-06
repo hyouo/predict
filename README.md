@@ -6,14 +6,13 @@
 
 现有数值研究主要来自辅助磷蛋白面板：5 个背景、每背景 72 个保留条件、18 个读数。它是少样本目标校准，不是仅凭未处理基线的单细胞 RNA 零样本预测。关键历史汇总位于 `reports/v0.7/`；解释和限制见 [STATUS.md](STATUS.md)。
 
-原研究包的 15 个源代码/测试/入口文件按字节接入，原 37 项测试保留；新增 8 项仓库工具测试。原始归档 SHA256 和文件映射在 `docs/history/v0.7_import.json`。完整历史数组及其他旧研究流水线仍在原归档中，不声称已全部迁移或全部重跑。
+原研究包的 15 个源代码/测试/入口文件按字节接入，原 37 项测试保留；新增 13 项仓库工具与元数据解析测试。原始归档 SHA256 和文件映射在 `docs/history/v0.7_import.json`。完整历史数组及其他旧研究流水线仍在原归档中，不声称已全部迁移或全部重跑。
 
 ## 从干净环境运行
 
 ```bash
 git clone https://github.com/hyouo/predict.git
 cd predict
-# 合并前使用 research/bootstrap-v0.7 分支；合并后直接使用 main。
 python -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements.txt
@@ -37,9 +36,12 @@ python -m tools.assets --asset auxiliary --source /path/to/hepatocyte_signaling_
 
 ```bash
 python -m tools.assets --asset op3
+python -m tools.op3_inventory --output runs/op3-inventory.json
 # sci-Plex 文件更大，仅显式运行：
 python -m tools.assets --asset sciplex
 ```
+
+**2026-09-06：固定 OP3 文件已通过仓库 Actions 成功获取，并取回本地重新验证文件与归档 SHA256。** 实际 CSR 矩阵形状为 1,813 × 5,288；元数据含 pseudobulk 字段、4 个细胞类型代码、138 个非对照扰动标签，未见显式 donor 列。详见 [取得记录](reports/data/op3_acquisition.json) 和 [元数据清单](reports/data/op3_inventory.json)。尚未训练 RNA 模型，不能把这些观测当作 1,813 个单细胞，也不能假定这份处理资产等于原始完整实验。
 
 资产版本、来源和大小上限在 `assets/manifest.json`。HDF5 结构读取成功只说明文件可读，**不代表原始计数、归一化、供体/孔/重复、对照或数据划分语义已经核验，更不代表模型已训练**。
 

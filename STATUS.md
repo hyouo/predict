@@ -14,7 +14,9 @@ The equal-cost probe study changed information: 17 covered conditions gave MSE 0
 
 The original 37 tests and 8 new repository utility tests passed locally (45 total). All 15 imported Python files matched original archive SHA256. A fixed real-panel integration case ran with both bootstrap and stacking; the largest full-versus-blocked prediction difference was approximately 1.33e-14. This is implementation validation, not another biological study.
 
-Pinned public OP3/sci-Plex asset metadata is retained. Before a successful documented acquisition, no local RNA matrix is assumed available. Even successful structural acquisition leaves assay/replicate/control semantics and model training pending. Remote workflow status must be read from Actions, not inferred from a workflow file.
+The initial remote Research CI run 34015151595 also passed all 45 checks and the measured-data integration step. Local/remote floating-point predictions are numerically consistent but have different byte hashes; no cross-machine bitwise identity is claimed. Five additional metadata-decoder tests pass locally, giving 50 checks in the updated checkout.
+
+OP3 acquisition SUCCEEDED in run 34015151607. The 23,700,750-byte fixed HDF5 file was retrieved through the repository artifact, and both artifact and matrix SHA256 were rechecked locally. The CSR matrix has shape (1813, 5288); metadata include four cell-type codes, 138 non-control perturbagen labels, 192 control observations and six plates. These are not asserted to be individual cells or raw counts. There is no explicit donor column. Read reports/data/op3_acquisition.json and op3_inventory.json. The artifact expires on 2026-09-13; fixed upstream acquisition remains reproducible. Full measurement semantics and RNA training are still pending; sci-Plex was not downloaded during onboarding.
 
 ## Not completed
 
