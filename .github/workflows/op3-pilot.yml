@@ -1,0 +1,58 @@
+name: Frozen OP3 quantitative pilot
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'src/op3_*.py'
+      - 'tools/op3_*.py'
+      - 'tests/test_op3*.py'
+      - 'reports/op3/**'
+      - 'docs/experiments/002*'
+      - '.github/workflows/op3-pilot.yml'
+permissions:
+  contents: read
+concurrency:
+  group: op3-pilot-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  reproduce:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      OPENBLAS_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.13.5'
+          cache: pip
+      - run: python -m pip install -r requirements.txt
+      - name: Check preregistered code and acquire pinned count matrix
+        run: |
+          python -m tools.op3_verify
+          python -m tools.assets --asset op3
+      - name: Fit and seal before public scoring; private outcomes remain blocked
+        run: |
+          python -m tools.op3_pilot fit --output runs/op3-ci --frozen-commit "$GITHUB_SHA"
+          python -m tools.op3_pilot evaluate --output runs/op3-ci
+          python -m tools.op3_verify --run runs/op3-ci
+          python -m tools.op3_contract --output runs/op3-ci/measurement_contract.json
+      - name: Archive committed source without runtime data or credentials
+        if: always()
+        run: |
+          mkdir -p artifacts
+          git archive -o artifacts/source.tar HEAD
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: op3-pilot-${{ github.run_id }}
+          path: |
+            runs/op3-ci/
+            artifacts/source.tar
+          if-no-files-found: error
+          retention-days: 7
