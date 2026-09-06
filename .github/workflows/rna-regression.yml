@@ -1,11 +1,7 @@
 name: Frozen quantitative RNA regression
+# Successful full replay: run 34019933564. Explicit manual replay only.
 on:
   workflow_dispatch:
-  pull_request:
-    paths:
-      - .github/workflows/rna-regression.yml
-      - tools/rna_regression_summary.py
-      - tools/op3_measurement_audit.py
 permissions:
   contents: read
 concurrency:
@@ -13,7 +9,6 @@ concurrency:
   cancel-in-progress: true
 jobs:
   reproduce:
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-24.04
     timeout-minutes: 12
     env:
