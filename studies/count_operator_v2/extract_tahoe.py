@@ -74,7 +74,8 @@ def extract(p,out):
         pd.DataFrame({'gene':genes[panel],'source_variance':vv[panel],'source_mean_cpm':cp.mean(0)[panel]}).to_csv(out/'gene_panel.csv',index=False)
         cp=None;train=None
         ctrl=np.concatenate((fullctrl[:,:,panel],(fullctrl.sum(2)-fullctrl[:,:,panel].sum(2))[:,:,None]),2)
-        np.savez_compressed(out/'controls.npz',counts=ctrl,cells=np.array(cells),genes=np.r_[genes[panel],'__OTHER__'])
+        output_genes=np.concatenate((genes[panel],['__OTHER__'])).astype(str)
+        np.savez_compressed(out/'controls.npz',counts=ctrl,cells=np.array(cells),genes=output_genes)
         fullctrl=None
         mask=(~obs.is_control)&np.isclose(obs.pert_dose_uM,5)&np.isclose(obs.pert_time_h,24)
         presence=[set(obs.loc[mask&(obs.cell_type==c),'perturbagen']) for c in cells[:32]]
@@ -105,7 +106,7 @@ def extract(p,out):
             if np.any(nrec[ix]==0):raise ValueError('Missing target condition; do not impute')
             dest=out/('SEALED/test_counts.npz' if role=='test' else role+'_counts.npz')
             dest.parent.mkdir(exist_ok=True)
-            np.savez_compressed(dest,counts=values[ix],libraries=libraries[ix],n_records=nrec[ix],n_cells=ncells[ix],cells=np.array(cells)[ix],drugs=np.array(drugs),genes=np.r_[genes[panel],'__OTHER__'])
+            np.savez_compressed(dest,counts=values[ix],libraries=libraries[ix],n_records=nrec[ix],n_cells=ncells[ix],cells=np.array(cells)[ix],drugs=np.array(drugs),genes=output_genes)
         pd.DataFrame(rowsout).to_csv(out/'treatment_rows.csv.gz',index=False)
         pd.DataFrame(mappings).to_csv(out/'control_rows.csv',index=False)
         info={'input_sha256':HASH,'input_bytes':SIZE,'started_utc':start,'finished_utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'source_revision':REV,'raw_shape':[int(v) for v in shape],'train_cells':cells[:32],'validation_cells':cells[32:41],'test_cells':cells[41:],'drug_ids':drugs,'gene_selection':'TRAIN A controls only; log2(CPM+1) cross-cell variance, mean CPM >=1','n_genes':3000,'includes_OTHER':True,'counts_conserved':True,'max_recorded_total_difference':max_total_difference,'test_treatments_used_for_panel_or_model':False,'expression_extraction_not_model_training':True,'files':{str(q.relative_to(out)):{'sha256':sha(q),'bytes':q.stat().st_size} for q in out.rglob('*') if q.is_file()}}
