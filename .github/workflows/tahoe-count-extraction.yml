@@ -1,0 +1,29 @@
+name: Pinned Tahoe count extraction
+on:
+  push:
+    branches: [research/count-operator-v2-20260907]
+    paths: [.github/workflows/tahoe-count-extraction.yml]
+permissions:
+  contents: read
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      OPENBLAS_NUM_THREADS: 1
+      OMP_NUM_THREADS: 1
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - name: Install pinned count-reader dependencies
+        run: python3 -m pip install h5py==3.15.1 numpy==2.3.5 pandas==2.2.3 scipy==1.17.0
+      - name: Extract with training-control-only gene selection
+        run: python3 studies/count_operator_v2/extract_tahoe.py --download --input /tmp/tahoe_pinned.h5ad --out tahoe_extract
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: tahoe-count-partitions-${{ github.run_id }}
+          path: tahoe_extract/
+          retention-days: 7
+          if-no-files-found: error
+          compression-level: 0
