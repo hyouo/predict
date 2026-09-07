@@ -8,7 +8,7 @@ Installable `perturb-predict` package and CLI; pinned OP3 prepare; train/save/lo
 
 ## Actually tested locally
 
-43 release tests plus the unchanged repository's 50 tests passed. Installed wheel run outside source checkout produced full B-cell and myeloid models/predictions, repeated the entire public OP3 benchmark, and ran portable inference using only saved models and unlabeled queries. Replayed predictions were bitwise equal. Comparison to the archived v0.8 reference: max absolute differences 1.78e-15 and 8.88e-16. Local dependency download failed because DNS was unavailable; the isolated wheel reused provisioned numerical dependencies. The remote release workflow tests clean dependency installation separately; actual GitHub checks are authoritative.
+51 release tests plus the unchanged repository's 50 tests passed. Installed wheel run outside source checkout produced full B-cell and myeloid models/predictions, repeated the entire public OP3 benchmark, and ran portable inference using only saved models and unlabeled queries. Replayed predictions were bitwise equal. Comparison to the archived v0.8 reference: max absolute differences 1.78e-15 and 8.88e-16. Local dependency download failed because DNS was unavailable; the isolated wheel reused provisioned numerical dependencies. The remote release workflow tests clean dependency installation separately; actual GitHub checks are authoritative.
 
 ## Scientific status
 

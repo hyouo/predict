@@ -73,51 +73,77 @@ def read_predictions(path):
     return meta, a
 
 
+def _write_scores(root, pred, truth, ids, *, record):
+    """Write into an ALREADY reserved run; callers own truth-access lifecycle."""
+    scores = {name: metrics(p, truth) for name, p in pred.items()}
+    json_write(root / 'metrics.json', {'scores': scores, **record, **provenance()})
+    with (root / 'per_compound.csv').open('x', encoding='utf-8', newline='') as f:
+        w = csv.writer(f); w.writerow(['model', 'compound_id', 'mse', 'rmse'])
+        for name, p in pred.items():
+            for d, mse in zip(ids, np.mean((p-truth)**2, axis=1)):
+                w.writerow([name, d, float(mse), float(np.sqrt(mse))])
+    return scores
+
+
 def score_arrays(out, pred, truth, ids, *, record):
     with run_directory(out) as root:
-        scores = {name: metrics(p, truth) for name, p in pred.items()}
-        json_write(root / 'metrics.json', {'scores': scores, **record, **provenance()})
-        with (root / 'per_compound.csv').open('x', encoding='utf-8', newline='') as f:
-            w = csv.writer(f); w.writerow(['model', 'compound_id', 'mse', 'rmse'])
-            for name, p in pred.items():
-                for d, mse in zip(ids, np.mean((p-truth)**2, axis=1)):
-                    w.writerow([name, d, float(mse), float(np.sqrt(mse))])
-    return scores
+        return _write_scores(root, pred, truth, ids, record=record)
 
 
 def evaluate(prediction, truth_path, out):
     pm, p = read_predictions(prediction)
-    tm, t = load_bundle(truth_path, 'truth')
-    if pm['contract'] != tm['contract']: raise ValueError('Truth and prediction contract mismatch')
-    rows, genes = alignment(t['ids'], p['ids'], 'ids'), alignment(t['genes'], p['genes'], 'genes')
-    truth = t['target'][rows][:, genes]
-    return score_arrays(out, {'model': p['prediction'], 'source_copy': p['source_copy'],
-                    'zero': np.zeros_like(truth)}, truth, p['ids'],
-                    record={'prediction_sha256': digest(prediction), 'truth_sha256': digest(truth_path),
-                            'evidence': 'user_supplied_truth; independence_not_certified'})
+    # Refuse a reused output BEFORE decoding any truth values.
+    with run_directory(out) as root:
+        record = {'prediction_sha256': digest(prediction), 'truth_sha256': digest(truth_path),
+                  'evidence': 'user_supplied_truth; independence_not_certified'}
+        json_write(root / 'access_started.json', {**record, 'truth_path': str(truth_path),
+                   'expected_query_ids': p['ids'].tolist(), **provenance()})
+        tm, t = load_bundle(truth_path, 'truth')
+        if pm['contract'] != tm['contract']: raise ValueError('Truth and prediction contract mismatch')
+        rows, genes = alignment(t['ids'], p['ids'], 'ids'), alignment(t['genes'], p['genes'], 'genes')
+        truth = t['target'][rows][:, genes]
+        return _write_scores(root, {'model': p['prediction'], 'source_copy': p['source_copy'],
+                            'zero': np.zeros_like(truth)}, truth, p['ids'], record=record)
 
 
 def score_op3(data, prediction, out, *, accept_public_reuse=False):
     if not accept_public_reuse:
         raise ValueError('Pass --accept-public-reuse: public labels were previously used in development')
-    from .op3 import Reader, TARGETS, DATA_SHA256, contract
+    from .op3 import Reader, TARGETS, DATA_SHA256, contract, expected_public_queries
     meta, p = read_predictions(prediction)  # check freeze before any public expression access
     ct = meta['contract']['target_context']
     if ct not in TARGETS.values() or meta['contract'] != contract(ct):
         raise ValueError('Prediction is not for the supported OP3 contract')
     if meta.get('input_provenance', {}).get('dataset_sha256') != DATA_SHA256:
         raise ValueError('Prediction lacks pinned OP3 query provenance')
-    r = Reader(data)
-    if not np.array_equal(r.genes, p['genes']): raise ValueError('Pinned OP3 gene panel/order mismatch')
-    allowed = set(r.obs['perturbagen'][r.ids(ct, split='public_test')])
-    if not set(p['ids']) <= allowed: raise ValueError('Predictions contain non-public query compounds')
-    effects, _ = r.effects(ct, 'public_test', 'EFGH', purpose='score')
-    truth = np.stack([effects[d] for d in p['ids']])
-    return score_arrays(out, {'model': p['prediction'], 'source_copy': p['source_copy'],
-                            'zero': np.zeros_like(truth)}, truth, p['ids'],
-                  record={'prediction_sha256': digest(prediction), 'dataset_sha256': DATA_SHA256,
-                          'evidence': 'engineering_acceptance_on_reused_public_OP3; NOT_new_validation',
-                          'private_expression_read': False, 'reader_log': r.log})
+    # Reserve once before opening the data reader. A rejected repeated invocation
+    # must not decode public expression, and failed scoring must keep an audit.
+    with run_directory(out) as root:
+        r = Reader(data)
+        if not np.array_equal(r.genes, p['genes']): raise ValueError('Pinned OP3 gene panel/order mismatch')
+        expected = set(expected_public_queries(r, ct))
+        actual = set(p['ids'])
+        if actual != expected:
+            raise ValueError(f'OP3 requires the complete frozen query set: '
+                             f'missing={len(expected-actual)}, extra={len(actual-expected)}')
+        record = {'prediction_sha256': digest(prediction), 'dataset_sha256': DATA_SHA256,
+                  'evidence': 'engineering_acceptance_on_reused_public_OP3; NOT_new_validation',
+                  'private_expression_read': False}
+        # Persist the intended access before effects() touches count values; if
+        # decoding or scoring raises, this plus FAILED.json remains available.
+        json_write(root / 'access_started.json', {**record, 'cell_type': ct,
+                   'expected_query_ids': sorted(expected),
+                   'planned_treatment_rows': r.ids(ct, split='public_test').tolist(),
+                   'planned_control_rows': r.ids(ct, control_letters='EFGH').tolist(), **provenance()})
+        try:
+            effects, _ = r.effects(ct, 'public_test', 'EFGH', purpose='score')
+            truth = np.stack([effects[d] for d in p['ids']])
+            scores = _write_scores(root, {'model': p['prediction'], 'source_copy': p['source_copy'],
+                                   'zero': np.zeros_like(truth)}, truth, p['ids'],
+                                   record={**record, 'reader_log': r.log})
+        finally:
+            json_write(root / 'access_log.json', {**record, 'reader_log': r.log})
+    return scores
 
 
 def benchmark(data, out, *, accept_conditional=False, accept_public_reuse=False):
