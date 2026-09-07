@@ -1,0 +1,55 @@
+name: TabICLv2 baseline assets
+on:
+  push:
+    branches: [research/structural-reset-20260907]
+    paths: [.github/workflows/tabicl-assets.yml]
+permissions:
+  contents: read
+jobs:
+  acquire:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Acquire official public checkpoint and exact package release
+        shell: bash
+        run: |
+          mkdir -p assets
+          python3 - <<'PY'
+          import hashlib,json,pathlib,urllib.request,time
+          out=pathlib.Path('assets')
+          def get_json(url):
+              with urllib.request.urlopen(url,timeout=60) as r:
+                  data=r.read(10000001)
+                  if len(data)>10000000: raise ValueError('metadata size cap')
+                  return json.loads(data)
+          def download(url,path,expected,size):
+              if size>500*1024*1024: raise ValueError('file size cap')
+              sha=hashlib.sha256();n=0
+              with urllib.request.urlopen(url,timeout=180) as r,open(path,'wb') as f:
+                  while True:
+                      b=r.read(1024*1024)
+                      if not b:break
+                      n+=len(b)
+                      if n>size:raise ValueError('stream exceeded declared size')
+                      f.write(b);sha.update(b)
+              if n!=size or sha.hexdigest()!=expected:raise ValueError('hash or size mismatch')
+              return {'url':url,'file':path.name,'bytes':n,'sha256':sha.hexdigest()}
+          md=get_json('https://huggingface.co/api/models/jingang/TabICL?blobs=true')
+          rev=md['sha'];name='tabicl-regressor-v2-20260212.ckpt'
+          entry=next(s for s in md['siblings'] if s['rfilename']==name)
+          lfs=entry['lfs'];size=lfs['size'];digest=lfs.get('sha256') or lfs['oid'].removeprefix('sha256:')
+          records=[download(f'https://huggingface.co/jingang/TabICL/resolve/{rev}/{name}?download=true',out/name,digest,size)]
+          wheel=get_json('https://pypi.org/pypi/tabicl/2.2.0/json')
+          obj=next(x for x in wheel['urls'] if x['filename'].endswith('py3-none-any.whl'))
+          records.append(download(obj['url'],out/obj['filename'],obj['digests']['sha256'],obj['size']))
+          (out/'manifest.json').write_text(json.dumps({'model_revision':rev,'checkpoint':name,'package':'tabicl==2.2.0','training_performed':False,'files':records},indent=2))
+          print((out/'manifest.json').read_text())
+          PY
+      - name: Preserve verified public baseline assets
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: tabicl-baseline-assets-${{ github.run_id }}
+          path: assets/
+          retention-days: 7
+          compression-level: 0
+          if-no-files-found: error
