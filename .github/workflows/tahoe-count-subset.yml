@@ -1,0 +1,33 @@
+name: Fixed Tahoe count subset acquisition
+on:
+  push:
+    branches: [research/count-operator-20260907]
+    paths: [.github/workflows/tahoe-count-subset.yml]
+permissions:
+  contents: read
+jobs:
+  acquire:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env:
+      OPENBLAS_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.13.5'
+      - name: Install fixed numerical readers
+        run: python -m pip install numpy==2.3.5 pandas==2.2.3 h5py==3.15.1
+      - name: Verify public input and export metadata-locked subset
+        run: python -u studies/count_transport_v2/acquire_tahoe.py
+      - name: Preserve subset and failure/provenance record, not raw cache
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: tahoe-count-subset-${{ github.run_id }}
+          path: tahoe_subset/
+          retention-days: 14
+          if-no-files-found: error
