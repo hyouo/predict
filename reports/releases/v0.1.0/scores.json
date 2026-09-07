@@ -1,0 +1,98 @@
+{
+  "release": "0.1.0",
+  "task": "conditional_OP3_few_shot_pair_prediction",
+  "genes": 5288,
+  "context_results": {
+    "B_cells": {
+      "model": {
+        "mse": 0.2316035683933411,
+        "mean_row_rmse": 0.4422042168607507,
+        "bias_mse": 0.025960310443819017,
+        "centered_mse": 0.2056432579495221,
+        "centered_pattern_cosine": 0.4240908952451633,
+        "retrieval_top1": 0.40816326530612246,
+        "retrieval_mrr": 0.5546925580088845,
+        "n_compounds": 49,
+        "n_genes": 5288
+      },
+      "source_copy": {
+        "mse": 0.24577154778464586,
+        "mean_row_rmse": 0.4607850803970202,
+        "bias_mse": 0.02943393998344036,
+        "centered_mse": 0.2163376078012055,
+        "centered_pattern_cosine": 0.4164186733586567,
+        "retrieval_top1": 0.3673469387755102,
+        "retrieval_mrr": 0.5646003089880641,
+        "n_compounds": 49,
+        "n_genes": 5288
+      },
+      "zero": {
+        "mse": 0.29001228238042387,
+        "mean_row_rmse": 0.4871649319179667,
+        "bias_mse": 0.03929127735776869,
+        "centered_mse": 0.25072100502265515,
+        "centered_pattern_cosine": 0.0,
+        "retrieval_top1": 0.02040816326530612,
+        "retrieval_mrr": 0.04,
+        "n_compounds": 49,
+        "n_genes": 5288
+      }
+    },
+    "Myeloid_cells": {
+      "model": {
+        "mse": 0.16452949706142467,
+        "mean_row_rmse": 0.3556993762361006,
+        "bias_mse": 0.010936451658882799,
+        "centered_mse": 0.1535930454025419,
+        "centered_pattern_cosine": 0.3804522666646764,
+        "retrieval_top1": 0.46808510638297873,
+        "retrieval_mrr": 0.5877452334899144,
+        "n_compounds": 47,
+        "n_genes": 5288
+      },
+      "source_copy": {
+        "mse": 0.1937254501750831,
+        "mean_row_rmse": 0.3966584920018723,
+        "bias_mse": 0.020751692610713593,
+        "centered_mse": 0.1729737575643695,
+        "centered_pattern_cosine": 0.3645298939355786,
+        "retrieval_top1": 0.5106382978723404,
+        "retrieval_mrr": 0.6154947764372303,
+        "n_compounds": 47,
+        "n_genes": 5288
+      },
+      "zero": {
+        "mse": 0.1976837963150562,
+        "mean_row_rmse": 0.37380709570999365,
+        "bias_mse": 0.01836911925462846,
+        "centered_mse": 0.17931467706042775,
+        "centered_pattern_cosine": 0.0,
+        "retrieval_top1": 0.021276595744680857,
+        "retrieval_mrr": 0.04166666666666667,
+        "n_compounds": 47,
+        "n_genes": 5288
+      }
+    }
+  },
+  "macro": {
+    "model": {
+      "mse": 0.1980665327273829,
+      "centered_mse": 0.179618151676032,
+      "bias_mse": 0.01844838105135091,
+      "retrieval_top1": 0.4381241858445506
+    },
+    "source_copy": {
+      "mse": 0.21974849897986448,
+      "centered_mse": 0.1946556826827875,
+      "bias_mse": 0.025092816297076978,
+      "retrieval_top1": 0.43899261832392533
+    },
+    "zero": {
+      "mse": 0.24384803934774002,
+      "centered_mse": 0.21501784104154145,
+      "bias_mse": 0.028830198306198575,
+      "retrieval_top1": 0.02084237950499349
+    }
+  },
+  "evidence": "reused_public_engineering_acceptance_NOT_independent_validation"
+}
