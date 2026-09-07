@@ -118,20 +118,29 @@ class Reader:
 
     def logcpm(self, ids, purpose='prepare'):
         ids = guard_rows(self.obs, ids, purpose)
-        out = np.zeros((len(ids), self.shape[1]), float)
-        with h5py.File(self.path) as f:
-            x = f['X']; pointers = x['indptr'][:]
-            for j, i in enumerate(ids):
-                a, b = int(pointers[i]), int(pointers[i+1])
-                np.add.at(out[j], x['indices'][a:b], x['data'][a:b])
-        totals = np.asarray(self.obs['psbulk_counts'][ids], float)
-        if (not np.isfinite(out).all() or np.any(out < 0) or np.any(out != np.floor(out))
-                or not np.isfinite(totals).all() or np.any(totals <= 0)
-                or np.any(out.sum(1) > totals + 1e-6)):
-            raise ValueError('Invalid count values or supplied library denominators')
-        self.log.append({'ids': ids.tolist(), 'purpose': purpose,
-                         'splits': sorted(set(map(str, self.obs['split'][ids])))})
-        return np.log2(1. + 1e6 * out / totals[:, None])
+        event = {'ids': ids.tolist(), 'purpose': purpose,
+                 'splits': sorted(set(map(str, self.obs['split'][ids]))),
+                 'status': 'started'}
+        self.log.append(event)
+        try:
+            out = np.zeros((len(ids), self.shape[1]), float)
+            with h5py.File(self.path) as f:
+                x = f['X']; pointers = x['indptr'][:]
+                for j, i in enumerate(ids):
+                    a, b = int(pointers[i]), int(pointers[i+1])
+                    np.add.at(out[j], x['indices'][a:b], x['data'][a:b])
+            totals = np.asarray(self.obs['psbulk_counts'][ids], float)
+            if (not np.isfinite(out).all() or np.any(out < 0) or np.any(out != np.floor(out))
+                    or not np.isfinite(totals).all() or np.any(totals <= 0)
+                    or np.any(out.sum(1) > totals + 1e-6)):
+                raise ValueError('Invalid count values or supplied library denominators')
+            result = np.log2(1. + 1e6 * out / totals[:, None])
+        except Exception as exc:
+            event.update(status='failed', error_type=type(exc).__name__)
+            raise
+        else:
+            event['status'] = 'completed'
+            return result
 
     def effects(self, ct, split, letters, purpose='prepare'):
         controls = self.ids(ct, control_letters=letters)
@@ -154,6 +163,18 @@ def contract(ct):
     return {'effect_space': 'log2(1+1e6*counts/psbulk_counts)-plate_matched_control_mean.v1',
             'source_context': SOURCE, 'target_context': ct, 'organism': 'human',
             'dose': '1 uM', 'time': '24 h', 'gene_namespace': 'OP3 pinned Ensembl IDs'}
+
+
+def expected_public_queries(reader, ct):
+    """One metadata-only query rule shared by preparation and OP3 evaluation."""
+    if ct not in TARGETS.values(): raise ValueError('Unsupported OP3 target context')
+    names = reader.obs['perturbagen']
+    source = set(names[reader.ids(SOURCE, split='train')])
+    nk = set(names[reader.ids(NK, split='train')])
+    public = set(names[reader.ids(ct, split='public_test')])
+    expected = sorted(source & nk & public)
+    if not expected: raise ValueError('Empty expected OP3 query set')
+    return expected
 
 
 def prepare(data, out, *, accept_conditional=False):
@@ -179,8 +200,7 @@ def prepare(data, out, *, accept_conditional=False):
         for name, ct in TARGETS.items():
             target, target_ids = r.effects(ct, 'train', 'ABCD')
             train_ids = sorted(set(target) & set(allowed))
-            public_rows = r.ids(ct, split='public_test')  # metadata only
-            queries = sorted(set(r.obs['perturbagen'][public_rows]) & set(allowed))
+            queries = expected_public_queries(r, ct)  # metadata only
             if set(train_ids) & set(queries): raise ValueError('Train/query compound overlap')
             dest = root / name
             for kind, ids in [('train', train_ids), ('query', queries)]:

@@ -53,12 +53,31 @@ def main():
             np.testing.assert_array_equal(p,z['prediction'])
         differences[name]={'repeat_max_abs':float(np.max(abs(p-q))),
                            'portable_inference_max_abs':0.,'shape':list(p.shape)}
+    # A subset is legitimate for inference, but may not masquerade as the
+    # official full OP3 evaluation. Exercise the actual CLI/data-reader guard.
+    from perturb_predict.io import load_bundle, write_bundle
+    qm, qa = load_bundle(a.out/'run1/prepared/B_cells/query.npz', 'query')
+    subset = a.out/'subset-query.npz'
+    write_bundle(subset, 'query', qa['ids'][:-1], qa['genes'], qm['contract'],
+                 source=qa['source'][:-1], provenance_info=qm['provenance'])
+    subset_prediction = a.out/'subset-prediction'
+    call('predict','--model',a.out/'run1/B_cells/model/model.npz',
+         '--data',subset,'--out',subset_prediction)
+    rejected = a.out/'rejected-subset-score'
+    cp = subprocess.run([sys.executable,'-m','perturb_predict','score-op3',
+         '--data',str(a.data),'--prediction',str(subset_prediction/'predictions.npz'),
+         '--out',str(rejected),'--accept-public-reuse'],text=True,capture_output=True)
+    assert cp.returncode == 2 and 'complete frozen query set' in cp.stderr
+    assert (rejected/'FAILED.json').exists()
+    assert not (rejected/'access_started.json').exists()
+    assert not (rejected/'COMPLETE.json').exists()
     # Reference belongs to an already-used public set: regression acceptance only.
     expected=0.1980665327273829
     assert abs(result['1']['model']['mse']-expected)<1e-9
     json_write(a.out/'acceptance.json',{'status':'passed','checks':differences,
           'scores':result['1'],'data_sha256':digest(a.data),
           'independent_biological_validation':False,
+          'incomplete_public_evaluation_rejected_before_truth':True,
           'installed_package':__import__('perturb_predict').__file__,**provenance()})
     print(json.dumps(result['1'],indent=2))
 
