@@ -1,25 +1,23 @@
-# Research status — repository onboarding
+# Research and software status
 
-Updated: 2026-09-06. Baseline: v0.7 core import. Stage: reproducible repository setup, not a new algorithm result.
+Updated 2026-09-07. First usable research software: v0.1.0. Historical research numbering (v0.7/v0.8) remains distinct.
 
-## Evidence carried forward
+## Implemented
 
-The auxiliary panel contains five cellular backgrounds, 72 ligand-present conditions per background and 18 phosphoprotein readouts. No independently replicated stimulated response is available per retained condition. The task permits measured source responses of query interventions and target calibration conditions.
+Installable `perturb-predict` package and CLI; pinned OP3 prepare; train/save/load/predict; generic aligned-effect bundles and evaluation; frozen prediction records; controlled private/public/control row access; explicit units/context/dose/time; input/hash checks, non-overwriting outputs and failed-run states. Reference model is single-source partial pooling with pooled target controls and no source-spectrum truncation.
 
-Historical expanded-stacking MSE is 0.254994 in the declared pair-mask study, versus 0.263091 for the stronger simple readout-marginal comparator (about 3.08% relative improvement). This does not establish general dominance; the candidate loses to simple alternatives under some factor-blocked tasks.
+## Actually tested locally
 
-The equal-cost probe study changed information: 17 covered conditions gave MSE 0.476562, while base16 plus one missing-factor probe gave 0.356214. Most of the gain concerned query-family mean error. It is not strict unseen-factor or RNA zero-shot success. Two historical CSV summaries are copied to reports/v0.7; they are not newly measured during onboarding.
+43 release tests plus the unchanged repository's 50 tests passed. Installed wheel run outside source checkout produced full B-cell and myeloid models/predictions, repeated the entire public OP3 benchmark, and ran portable inference using only saved models and unlabeled queries. Replayed predictions were bitwise equal. Comparison to the archived v0.8 reference: max absolute differences 1.78e-15 and 8.88e-16. Local dependency download failed because DNS was unavailable; the isolated wheel reused provisioned numerical dependencies. The remote release workflow tests clean dependency installation separately; actual GitHub checks are authoritative.
 
-## Checks performed during onboarding
+## Scientific status
 
-The original 37 tests and 8 new repository utility tests passed locally (45 total). All 15 imported Python files matched original archive SHA256. A fixed real-panel integration case ran with both bootstrap and stacking; the largest full-versus-blocked prediction difference was approximately 1.33e-14. This is implementation validation, not another biological study.
+OP3 units are conditional pseudobulk counts with the declared log-CPM effect, not individual cells or competition significance statistics. Release uses 11 B-cell and 10 myeloid calibration compounds and 49/47 public query pairs, not the alternative v0.8 larger-label track. Mean MSE 0.1980665 versus source-copy 0.2197485; drug retrieval 0.438124 versus 0.438993. These are already-used public development data, not new independent validation or SOTA evidence.
 
-The initial remote Research CI run 34015151595 also passed all 45 checks and the measured-data integration step. Local/remote floating-point predictions are numerically consistent but have different byte hashes; no cross-machine bitwise identity is claimed. Five additional metadata-decoder tests pass locally, giving 50 checks in the updated checkout.
+Explicit donor identity is unavailable; upstream gene-panel selection and shared source/target wells remain limitations. Strict end-to-end unseen-target and new-drug scientific approval remains withheld. No ATAC or modern-SOTA same-task comparison is claimed. No calibrated biological confidence intervals.
 
-OP3 acquisition SUCCEEDED in run 34015151607. The 23,700,750-byte fixed HDF5 file was retrieved through the repository artifact, and both artifact and matrix SHA256 were rechecked locally. The CSR matrix has shape (1813, 5288); metadata include four cell-type codes, 138 non-control perturbagen labels, 192 control observations and six plates. These are not asserted to be individual cells or raw counts. There is no explicit donor column. Read reports/data/op3_acquisition.json and op3_inventory.json. The artifact expires on 2026-09-13; fixed upstream acquisition remains reproducible. Full measurement semantics and RNA training are still pending; sci-Plex was not downloaded during onboarding.
+## Next research gate
 
-## Not completed
+Freeze an independent dataset/experiment-unit protocol and compare this stable release baseline before adding more architecture. Separate prediction-error reduction, drug-specific response discrimination and incremental baseline-information claims. Issues #2/#3 remain scientific tracking gates, not reasons to prevent clearly labeled conditional research use.
 
-No quantitative RNA/ATAC model training; no complete target-context zero-shot biological validation; no same-task execution of the latest large baselines; no independent prospective experiment; no calibrated biological confidence claim.
-
-See docs/ROADMAP.md and open issues for the next bounded work units. No autonomous research service or scheduled paid computation is enabled.
+Original onboarding README/STATUS remain in docs/history/*_before_usable.md. No unattended research service or paid compute is enabled.

@@ -1,54 +1,38 @@
-# predict — 跨细胞背景扰动预测
+# Predict — v0.1.0 可用研究基线
 
-本仓库是后续研究的版本化工作位置：保存算法、统计假设、数据来源、实验协议、负结果及复现入口。当前接入基线为 **v0.7 核心代码**，不是一次新的算法领先声明。
+跨细胞背景的化学扰动定量响应预测。现在提供可安装的 `perturb-predict` 命令、可保存/独立加载的模型、严格的数据合同，以及真实 OP3 的可重复验收。
 
-## 当前证据
+**可用范围：单源、少样本目标校准、已在源背景测过的查询药物。不是全新药物/完全未见细胞背景零样本，不是临床产品，不宣称 SOTA。**
 
-现有数值研究主要来自辅助磷蛋白面板：5 个背景、每背景 72 个保留条件、18 个读数。它是少样本目标校准，不是仅凭未处理基线的单细胞 RNA 零样本预测。关键历史汇总位于 `reports/v0.7/`；解释和限制见 [STATUS.md](STATUS.md)。
-
-原研究包的 15 个源代码/测试/入口文件按字节接入，原 37 项测试保留；新增 13 项仓库工具与元数据解析测试。原始归档 SHA256 和文件映射在 `docs/history/v0.7_import.json`。完整历史数组及其他旧研究流水线仍在原归档中，不声称已全部迁移或全部重跑。
-
-## 从干净环境运行
+## 安装与运行
 
 ```bash
-git clone https://github.com/hyouo/predict.git
-cd predict
-python -m venv .venv
-source .venv/bin/activate
-python -m pip install -r requirements.txt
-export OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1
-python -m tools.assets --asset auxiliary
-python -m unittest discover -s tests -v
-python -m tools.smoke --output runs/my-first-check
+python -m pip install -r requirements-release.txt
+python -m pip install .
+perturb-predict --version
+perturb-predict fetch-op3 --out data/rna/op3_standardized_processed.h5ad
+perturb-predict benchmark-op3 --data data/rna/op3_standardized_processed.h5ad \
+  --out runs/usable-001 --accept-conditional --accept-public-reuse
 ```
 
-`smoke` 用真实辅助数据做一次固定划分的集成检查，记录代码/数据/预测哈希、环境、划分和 Git 提交，并比较分块与非分块实现。它不是独立生物验证；输出目录存在时拒绝覆盖。
+`--out` 必须不存在。已有固定哈希 OP3 文件可直接复用。网络失败明确报错，不使用合成数据替代。发行验收使用 Python 3.13.5、NumPy 2.3.5、h5py 3.15.1；无需 GPU。没有发布到 PyPI。
 
-已有本地原始数据时：
+## 文档
 
-```bash
-python -m tools.assets --asset auxiliary --source /path/to/hepatocyte_signaling_raw.csv
-```
+- [快速开始与分步CLI](docs/releases/QUICKSTART_ZH.md)
+- [自有数据格式与Python API](docs/releases/CUSTOM_DATA_ZH.md)
+- [预先提交的发行验收标准](docs/releases/v0.1.0-acceptance-plan.md)
+- [验收结果与局限](docs/releases/VALIDATION_ZH.md)
+- [实际评分JSON](reports/releases/v0.1.0/scores.json)
 
-固定资产的 SHA256 不匹配、下载失败或数据缺失都会报错，不会偷偷使用模拟数据。
+模型采用全谱的单源部分汇聚斜率与截距收缩；训练、预测、评分三个操作互相分离。推理仅需模型和不含目标标签的查询包。完整药物留一选参数，按基因ID对齐，拒绝缺失/重复ID和非有限值；读取模型禁用pickle；输出附SHA256、参数和执行状态。
 
-## RNA 数据入口
+旧研究代码保留在 `src/` 和 `tools/`，其协议与历史分数不变。v0.8不同校准预算的两条本地研究轨迹不混合；本次明确提炼最新提供的11/10校准药物轨迹。产品版本v0.1.0与历史研究版本不是同一编号序列。
 
-```bash
-python -m tools.assets --asset op3
-python -m tools.op3_inventory --output runs/op3-inventory.json
-# sci-Plex 文件更大，仅显式运行：
-python -m tools.assets --asset sciplex
-```
+## 验收与科研边界
 
-**2026-09-06：固定 OP3 文件已通过仓库 Actions 成功获取，并取回本地重新验证文件与归档 SHA256。** 实际 CSR 矩阵形状为 1,813 × 5,288；元数据含 pseudobulk 字段、4 个细胞类型代码、138 个非对照扰动标签，未见显式 donor 列。详见 [取得记录](reports/data/op3_acquisition.json) 和 [元数据清单](reports/data/op3_inventory.json)。尚未训练 RNA 模型，不能把这些观测当作 1,813 个单细胞，也不能假定这份处理资产等于原始完整实验。
+本地43项发行测试及50项原仓库测试通过；安装后的wheel完成两个目标的真实OP3回放和独立推理；与旧v0.8对应估计器数值一致。当前GitHub执行结果以Actions为准。
 
-资产版本、来源和大小上限在 `assets/manifest.json`。HDF5 结构读取成功只说明文件可读，**不代表原始计数、归一化、供体/孔/重复、对照或数据划分语义已经核验，更不代表模型已训练**。
+本轮公开OP3平均MSE 0.198067，对照源复制0.219748；这是重复使用公开开发数据的工程验收，不是独立生物学验证。上游基因筛选、同孔源/目标共享、供体映射缺失等问题未被包装解决。下一科学关卡仍是独立研究/实验条件下的验证，以及目标基线调控信息是否带来增量。
 
-GitHub Actions 的 CI 用于测试和一次小型集成检查；独立的 OP3 工作流尝试获取固定公开文件、核验哈希和输出结构审计。运行是否成功以 Actions 日志为准。大矩阵只作短期 artifact，不进入 Git；没有定时训练、付费 GPU 或自主后台科研进程。
-
-## 研究和协作
-
-先读 [研究状态](STATUS.md)、[路线图](docs/ROADMAP.md) 和 [工作约定](AGENTS.md)。新增研究使用独立分支和 PR，保留负结果及预算变化，不覆写既有实验。
-
-原始入口 `run_covariance.py`、`run_sentinel_probe.py` 为未改写的历史程序，可能覆写其输出目录；只在独立工作树/全新目录运行，正式迭代优先使用有运行记录的入口。`python -m tools.verify_import` 仅核验初始化基线；以后算法修改造成差异是正常现象，不应修改历史哈希来掩盖变化。
+不配置定时科研循环、付费GPU或自动发布科学结论。

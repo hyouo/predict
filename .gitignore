@@ -18,3 +18,6 @@ __pycache__/
 *.h5ad
 *.npz
 *.npy
+/dist/
+/build/
+*.egg-info/

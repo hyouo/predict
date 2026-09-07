@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "perturb-predict"
+version = "0.1.0"
+description = "Auditable few-shot quantitative perturbation prediction research baseline"
+readme = "docs/releases/QUICKSTART_ZH.md"
+requires-python = ">=3.11"
+dependencies = ["numpy>=2.0,<3", "h5py>=3.10,<4"]
+
+[project.scripts]
+perturb-predict = "perturb_predict.cli:main"
+
+[tool.setuptools]
+packages = ["perturb_predict"]
