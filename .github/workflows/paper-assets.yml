@@ -1,0 +1,62 @@
+name: Paper replication assets
+on:
+  push:
+    branches: [research/paper-validation-20260907]
+    paths: [.github/workflows/paper-assets.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  acquire:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - name: Fetch fixed public assets with size and checksum validation
+        shell: bash
+        run: |
+          mkdir -p paper-assets
+          python3 - <<'PY'
+          import urllib.request, hashlib, json, pathlib, datetime, subprocess
+          root = pathlib.Path('paper-assets')
+          jobs = [
+            ('sciplex_processed.h5ad', 'https://huggingface.co/datasets/theislab/chem-perturbridge/resolve/6c54c8eb0321cceff4f888c54e199077d055e20b/sciplex/srivatsan20_sciplex3_processed.h5ad?download=true', 167772160, '8ad35a20e44bf41cb030a0f063eb6a5727965b8f27d0eda4380bda0e294ccc4c'),
+            ('springer_nature_template.zip', 'https://cms-resources.apps.public.k8s.springernature.io/springer-cms/rest/v1/content/18782940/data/v12', 3000000, None),
+            ('chem_perturbridge_readme.md', 'https://huggingface.co/datasets/theislab/chem-perturbridge/raw/6c54c8eb0321cceff4f888c54e199077d055e20b/README.md', 100000, None),
+            ('chem_perturbridge_upload_manifest.tsv', 'https://huggingface.co/datasets/theislab/chem-perturbridge/resolve/6c54c8eb0321cceff4f888c54e199077d055e20b/upload_manifest.tsv', 100000, None)
+          ]
+          records=[]
+          for name,url,cap,expected in jobs:
+            rec={'name':name,'url':url,'max_bytes':cap,'expected_sha256':expected,'started_utc':datetime.datetime.now(datetime.timezone.utc).isoformat()}
+            tmp=root/(name+'.part')
+            try:
+              req=urllib.request.Request(url,headers={'User-Agent':'public-perturbation-research/1.0'})
+              n=0; h=hashlib.sha256()
+              with urllib.request.urlopen(req,timeout=90) as inp, tmp.open('wb') as out:
+                for block in iter(lambda:inp.read(1024*1024),b''):
+                  n+=len(block)
+                  if n>cap: raise ValueError('asset size cap exceeded')
+                  h.update(block); out.write(block)
+              sha=h.hexdigest()
+              if expected is not None and sha!=expected: raise ValueError('SHA256 mismatch')
+              tmp.rename(root/name)
+              rec.update(status='success',bytes=n,sha256=sha)
+            except Exception as e:
+              tmp.unlink(missing_ok=True);rec.update(status='failed',error=str(e))
+            records.append(rec)
+            print(json.dumps(rec),flush=True)
+          subprocess.run(['git','archive','--format=zip','--output='+str(root/'repository_snapshot.zip'),'HEAD'],check=True)
+          (root/'retrieval.json').write_text(json.dumps(records,indent=2))
+          if records[0]['status']!='success': raise SystemExit('quantitative replication data retrieval failed')
+          PY
+      - name: Preserve assets and retrieval audit
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: paper-replication-assets-${{ github.run_id }}
+          path: paper-assets/
+          retention-days: 14
+          if-no-files-found: error
+          compression-level: 1
