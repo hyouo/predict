@@ -1,0 +1,62 @@
+name: Pinned Tahoe metadata audit
+on:
+  push:
+    branches: [research/count-operator-v2-20260907]
+    paths: [.github/workflows/tahoe-metadata-audit.yml]
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Install bounded metadata reader
+        run: python3 -m pip install h5py==3.15.1 numpy==2.3.5 pandas==2.2.3
+      - name: Download fixed public asset and inspect metadata only
+        run: |
+          mkdir -p audit
+          python3 - <<'PY'
+          import urllib.request, hashlib, json, pathlib, datetime
+          import h5py, numpy as np, pandas as pd
+          url='https://huggingface.co/datasets/theislab/chem-perturbridge/resolve/6c54c8eb0321cceff4f888c54e199077d055e20b/tahoe/tahoe_processed.h5ad?download=true'
+          expected='09ac7c8f63a77dc730156c78e361273c3369959640120e5c54241f1a6f82d7b2'
+          cap=4500000000
+          p=pathlib.Path('/tmp/tahoe_pinned.h5ad'); h=hashlib.sha256(); size=0
+          with urllib.request.urlopen(url,timeout=120) as r, p.open('wb') as f:
+            while True:
+              b=r.read(8*1024*1024)
+              if not b: break
+              size+=len(b)
+              if size>cap: raise RuntimeError('public data download cap exceeded')
+              f.write(b);h.update(b)
+          if h.hexdigest()!=expected: raise RuntimeError('SHA256 mismatch')
+          def col(n):
+            if isinstance(n,h5py.Dataset):
+              if h5py.check_string_dtype(n.dtype): return n.asstr()[:]
+              return n[:]
+            if 'categories' in n and 'codes' in n:
+              a=col(n['categories']);return [a[i] if i>=0 else None for i in n['codes'][:]]
+            if 'values' in n:
+              a=col(n['values']).astype(object)
+              if 'mask' in n:a[n['mask'][:]]=None
+              return a
+            raise ValueError('Unsupported observation encoding: '+n.name)
+          with h5py.File(p) as f:
+            obs=pd.DataFrame({k:col(v) for k,v in f['obs'].items()})
+            var=pd.DataFrame({k:col(v) for k,v in f['var'].items()})
+            x=f['X'];shape=list(x.shape) if isinstance(x,h5py.Dataset) else list(x.attrs['shape'])
+            report={'download_bytes':size,'sha256':h.hexdigest(),'shape':[int(v) for v in shape],'obs_columns':list(obs),'var_columns':list(var),'layers':list(f.get('layers',{})),'expression_values_read':False,'time':datetime.datetime.now(datetime.timezone.utc).isoformat()}
+            for k in ['cell_type','pert_dose_uM','pert_time_h','is_control','plate','tissue','disease']:
+              if k in obs:report[k+'_counts']={str(a):int(b) for a,b in obs[k].value_counts(dropna=False).items()}
+            print(json.dumps(report),flush=True)
+            obs.to_csv('audit/tahoe_obs.csv.gz',index=False)
+            var.to_csv('audit/tahoe_var.csv.gz',index=False)
+            pathlib.Path('audit/tahoe_metadata_audit.json').write_text(json.dumps(report,indent=2))
+          p.unlink()
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: tahoe-metadata-${{ github.run_id }}
+          path: audit/
+          retention-days: 7
+          if-no-files-found: error
