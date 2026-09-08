@@ -1,0 +1,7 @@
+# Post-primary development only: preserve the full response spectrum
+
+The six primary test contexts have now been scored. Their scores exposed a retrieval trade-off in the low-rank backbone. The primary result, all thirteen frozen predictors and their adverse metrics will remain unchanged.
+
+A separate development-only prototype will put the previously selected full-feature direct-ridge common backbone underneath the same source-support-centred (or uncentred ablation) baseline-by-drug correction. It will use only the original 18 training and 6 validation contexts. The backbone penalty is the already selected validation value 1.0. Correction penalties {0.01,0.1,1,10,100} and amplitudes {0,0.25,0.5,1} are selected on validation context MSE; a separate contrast-selected variant is retained. Evaluate validation retrieval too, with no tuning specifically on retrieval.
+
+DO NOT score this new prototype on the six already-open test contexts in this iteration. Any promising validation result is internal development, not another independent confirmation and not a replacement for the primary results. Save the training data roles, selected settings, predictions only for validation contexts and coefficient files. A future genuinely separate confirmation resource is required. This is ordinary full-spectrum residual modelling with a testable support-centering hypothesis, not a claim that these components are newly invented.
