@@ -1,0 +1,52 @@
+name: Pathway v6 official annotation acquisition
+on:
+  push:
+    branches: [research/pathway-transfer-v6-20260908]
+    paths: [.github/workflows/pathway-v6-assets.yml]
+permissions:
+  contents: read
+jobs:
+  acquire:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - name: Download official public gene sets with byte limits
+        run: |
+          mkdir -p annotations
+          python3 - <<'PY'
+          import urllib.request, hashlib, json, datetime, pathlib, zipfile, io
+          out=pathlib.Path('annotations'); attempts=[]; completed=False
+          urls=[
+            'https://download.reactome.org/97/ReactomePathways.gmt.zip',
+            'https://reactome.org/download/current/ReactomePathways.gmt.zip',
+            'https://download.reactome.org/current/ReactomePathways.gmt.zip'
+          ]
+          for url in urls:
+            row={'url':url,'retrieved_utc':datetime.datetime.now(datetime.timezone.utc).isoformat()}
+            try:
+              with urllib.request.urlopen(url,timeout=40) as r:
+                raw=r.read(8*1024*1024+1); row['final_url']=r.url
+              if len(raw)>8*1024*1024: raise ValueError('download byte cap exceeded')
+              with zipfile.ZipFile(io.BytesIO(raw)) as z:
+                files=[x for x in z.infolist() if x.filename.endswith('.gmt')]
+                if len(files)!=1 or files[0].file_size>20*1024*1024: raise ValueError('unexpected archive')
+                text=z.read(files[0]).decode('utf-8')
+              if len(text.splitlines())<100: raise ValueError('too few pathways')
+              (out/'ReactomePathways.gmt.zip').write_bytes(raw)
+              (out/'ReactomePathways.gmt').write_text(text)
+              row.update(status='success',bytes=len(raw),sha256=hashlib.sha256(raw).hexdigest(),gmt_sha256=hashlib.sha256(text.encode()).hexdigest(),pathway_lines=len(text.splitlines()),version_from_requested_url='97' if '/97/' in url else 'current; exact release not independently verified')
+              completed=True
+            except Exception as e: row.update(status='failed',error=str(e))
+            attempts.append(row); print(json.dumps(row),flush=True)
+            if completed: break
+          (out/'acquisition.json').write_text(json.dumps({'attempts':attempts,'complete':completed,'training_performed':False,'source':'Reactome official download; retain source attribution'},indent=2))
+          if not completed: raise RuntimeError('Official annotation acquisition failed')
+          PY
+      - name: Save annotations and audit
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: pathway-v6-annotations-${{ github.run_id }}
+          path: annotations/
+          retention-days: 14
+          if-no-files-found: error
