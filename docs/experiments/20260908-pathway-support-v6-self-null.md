@@ -1,0 +1,7 @@
+# v6 validation-driven extension: matched self-baseline wiring nulls
+
+Timing: after reading validation-context results of global and local neighbourhood models, before any v6 target-test outcomes have been scored. This extension is validation-driven development on an already exposed research dataset, not a fresh independent hypothesis confirmation.
+
+The local-self comparator has a lower validation MSE than the pathway variant. Test whether this requires the correct correspondence between an output gene and its own baseline feature. Keep the fixed 50% full-baseline kernel plus 50% one-baseline-feature kernel, same affine estimator, penalty/common/correction grid, source budget and scoring protocol. Compare the real self-gene wiring to five fixed random bijections mapping output genes to baseline genes (seeds 9101-9105). The nulls preserve one feature per output and one use of each feature; record any fixed points. Fit/select each independently using allowed validation contexts. Both ordinary and tissue-excluded settings are reported.
+
+Do not infer drug-target mechanisms from this test: own-gene baseline can help through measurement-scale constraints, common post-treatment expression, or other noncausal associations. Preserve reference-matched centred drug-by-context contrasts and common-response MSE. The earlier real-Reactome and pathway-null results remain unchanged. Freeze all current predictions jointly before target scoring. No test-based candidate/seed selection.
