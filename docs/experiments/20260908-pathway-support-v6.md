@@ -1,0 +1,16 @@
+# v6: support-aware response transport and external pathway prior
+
+This is retrospective development on the previously exposed v4/v5 LINCS L1000 Phase II slice. It is NOT a new blind study. Target-treatment budget is zero; target A controls and query-compound source responses remain available. Published Level-3 units and the 978-gene axis are unchanged. Keep the v5 18/6/6 exact-context split, count>=3 source coverage, reference-matched interaction evaluator, and a separately reported tissue-excluded source stress test. Final targets are not used in current fitting/selection.
+
+## Questions
+1. Does estimating an unpenalized drug-specific intercept jointly with the baseline-response kernel improve upon arithmetic source centering? Compare exact full-baseline kernel, a matched common/correction-scale comparator, and ordinary/universal kriging (equivalently ridge with unpenalized intercept). Do not call a classical kriging correction a new theorem or unique algorithm.
+2. Does a real Reactome gene-membership prior provide incremental information beyond all 978 baseline genes? Acquire official public GMT with byte caps, source headers and SHA256 before use. Restrict to human sets overlapping 5-150 supplied symbols; deduplicate identical membership vectors. Normalize by pathway size and gene degree. Compare global and pathway/mixed kernels with identical statistical solver and search budget. Include five preregistered gene-label permutations within exact membership-degree strata (seeds 9101-9105), preserving coverage, set sizes, overlaps and gene degree. Do not substitute invented gene sets if download fails.
+3. Does a diagonal source-repeat variability working model help? If implemented, estimate only from source plate-disjoint repeats, retain missing estimates explicitly, and do not describe the proxy as pure technical noise or claim biological confidence calibration.
+
+## Selection and reporting
+Ridge penalties are [0.01,0.1,1,10,100]. Common-response coefficients [0.5,0.75,1] and correction strengths [0,0.25,0.5,1] are searched identically for expanded statistical comparators. Original v5 coupled scaling is retained as a historical matched-replay control. Primary choice minimizes validation-context mean MSE; a separately named secondary predictor minimizes validation replicated interaction excess. All tested variants and failures remain visible. Pathway/global mixtures 0.5 and 1 use the same grid. No target-test-dependent tuning or result replacement.
+
+Freeze predictions and code/data/config hashes before scoring targets, both ordinary and tissue-excluded settings. Preserve overall MSE, centered MSE, bias, retrieval, nonzero prediction amplitude, replicated interaction risk and all target contexts. If a new idea is added after scoring, label it exploratory and preserve the first-stage results. Conditional resampling fixes data processing/fits and is not independent biological inference. Physical plate/well layout and normalized-data dependencies remain limitations.
+
+## Novelty boundary
+This round is a targeted hypothesis test of external biological information and support-aware statistics. No State/MAP/PrePR-CT result, SOTA superiority, clinical reliability, new independent data study, or journal-level claim is implied. No paid compute or autonomous recurring research is authorized by this protocol.
