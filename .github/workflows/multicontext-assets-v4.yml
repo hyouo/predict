@@ -1,0 +1,45 @@
+name: Multi-context public asset audit v4
+on:
+  push:
+    branches: [research/multicontext-v4-20260908]
+    paths: [.github/workflows/multicontext-assets-v4.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - name: Inspect fixed public metadata only
+        run: |
+          mkdir -p audit
+          python3 - <<'PY'
+          import json, urllib.request, pathlib, hashlib, datetime
+          out=pathlib.Path('audit')
+          repo='theislab/chem-perturbridge'
+          rev='6c54c8eb0321cceff4f888c54e199077d055e20b'
+          records=[]
+          for directory in ['tahoe','l1000_phase1','l1000_phase2']:
+              url=f'https://huggingface.co/api/datasets/{repo}/tree/{rev}/{directory}'
+              rec={'url':url,'directory':directory,'revision':rev,'time_utc':datetime.datetime.now(datetime.timezone.utc).isoformat()}
+              try:
+                  with urllib.request.urlopen(url,timeout=30) as response:
+                      raw=response.read(300001)
+                  if len(raw)>300000: raise ValueError('metadata exceeds byte cap')
+                  payload=json.loads(raw)
+                  (out/(directory+'.json')).write_bytes(raw)
+                  rec.update(status='success',sha256=hashlib.sha256(raw).hexdigest(),files=payload)
+              except Exception as e:
+                  rec.update(status='failed',error=str(e))
+              records.append(rec)
+              print(json.dumps(rec),flush=True)
+          (out/'manifest.json').write_text(json.dumps(records,indent=2))
+          PY
+      - name: Save audit only
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: multicontext-metadata-${{ github.run_id }}
+          path: audit/
+          retention-days: 14
+          if-no-files-found: error
