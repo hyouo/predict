@@ -1,0 +1,32 @@
+name: Pathway support v6 core checks
+on:
+  push:
+    branches: [research/pathway-support-v6-20260908]
+    paths:
+      - studies/pathway_support_v6/src/**
+      - studies/pathway_support_v6/tests/**
+      - studies/pathway_support_v6/requirements.txt
+      - .github/workflows/pathway-v6-tests.yml
+permissions:
+  contents: read
+jobs:
+  core:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - name: Read the exact public commit
+        run: |
+          git init checkout
+          cd checkout
+          git fetch --depth=1 https://github.com/hyouo/predict.git "$GITHUB_SHA"
+          git checkout --detach FETCH_HEAD
+      - name: Install bounded numerical dependencies
+        run: python3 -m pip install -r checkout/studies/pathway_support_v6/requirements.txt
+      - name: Run the 18 core mathematical checks
+        env:
+          OPENBLAS_NUM_THREADS: '1'
+          OMP_NUM_THREADS: '1'
+          MKL_NUM_THREADS: '1'
+        run: |
+          cd checkout/studies/pathway_support_v6
+          python3 -m unittest discover -s tests -v
