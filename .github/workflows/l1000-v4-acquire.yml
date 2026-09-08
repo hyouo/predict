@@ -1,0 +1,100 @@
+name: Bounded L1000 Phase II acquisition v4
+on:
+  push:
+    branches: [research/multicontext-v4-20260908]
+    paths: [.github/workflows/l1000-v4-acquire.yml]
+permissions:
+  contents: read
+jobs:
+  acquire:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - name: Install data readers only
+        run: python3 -m pip install numpy==2.3.5 pandas==2.2.3 h5py==3.15.1 scipy==1.17.0
+      - name: Download, verify, inspect and export fixed dose/time
+        env:
+          OPENBLAS_NUM_THREADS: '1'
+        run: |
+          mkdir -p audit exported
+          python3 - <<'PY'
+          import urllib.request, hashlib, json, pathlib, datetime
+          import h5py, numpy as np, pandas as pd
+          from scipy import sparse
+          url='https://huggingface.co/datasets/theislab/chem-perturbridge/resolve/6c54c8eb0321cceff4f888c54e199077d055e20b/l1000_phase2/l1000_phase2_level3_deg_ready_landmark_processed.h5ad?download=true'
+          expected='34d198df9eddac5b535a0408794caaf41073fa014c74429d1050e483576fb581'
+          p=pathlib.Path('/tmp/l1000.h5ad'); h=hashlib.sha256(); n=0
+          with urllib.request.urlopen(url,timeout=90) as src,p.open('wb') as dst:
+              for block in iter(lambda:src.read(1024*1024),b''):
+                  n+=len(block)
+                  if n>800000000: raise ValueError('download byte cap exceeded')
+                  h.update(block);dst.write(block)
+          if h.hexdigest()!=expected or n!=707799618: raise ValueError('source checksum/size mismatch')
+          def text(v):
+              if isinstance(v,bytes): return v.decode('utf8')
+              return str(v)
+          def column(node):
+              if isinstance(node,h5py.Dataset):
+                  a=node[()]
+                  if a.dtype.kind in 'SO': return np.asarray([text(v) for v in a])
+                  return a
+              if 'categories' in node and 'codes' in node:
+                  cats=column(node['categories']);codes=node['codes'][()]
+                  return np.asarray([None if k<0 else cats[k] for k in codes],object)
+              if 'values' in node and 'mask' in node:
+                  a=column(node['values']).astype(object);a[node['mask'][()]]=None;return a
+              raise ValueError('Unsupported column encoding '+node.name)
+          def frame(group):
+              ix=text(group.attrs.get('_index','_index'))
+              return pd.DataFrame({k:column(v) for k,v in group.items() if k!=ix},index=column(group[ix]))
+          with h5py.File(p,'r') as f:
+              obs=frame(f['obs']);var=frame(f['var'])
+              obs.insert(0,'original_row',np.arange(len(obs)))
+              obs.to_csv('audit/all_obs.csv.gz');var.to_csv('audit/var.csv.gz')
+              x=f['X']
+              shape=tuple(x.shape) if isinstance(x,h5py.Dataset) else tuple(x.attrs['shape'])
+              rec={'url':url,'sha256':expected,'bytes':n,'shape':shape,'obs_columns':list(obs),'var_columns':list(var),'root_keys':list(f),'X_attrs':{k:str(v) for k,v in x.attrs.items()},'time_utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'training_performed':False,'approved_for_training':False}
+              for key in ['cell_type','pert_type','is_control','pert_time_h','pert_dose_uM']:
+                  if key in obs:rec[key]=obs[key].value_counts(dropna=False).head(100).to_dict()
+              print(json.dumps(rec,default=str),flush=True)
+              time=pd.to_numeric(obs['pert_time_h'],errors='coerce').to_numpy()
+              dose=pd.to_numeric(obs['pert_dose_uM'],errors='coerce').to_numpy()
+              control=obs['is_control'].astype(str).str.lower().isin(['true','1']).to_numpy()
+              mask=np.isclose(time,24) & (control | np.isclose(dose,10))
+              rows=np.flatnonzero(mask);obs.iloc[rows].to_csv('exported/obs.csv.gz');var.to_csv('exported/var.csv.gz')
+              if len(rows)==0:raise ValueError('No rows in metadata-defined slice')
+              rec['slice_rows']=len(rows);rec['slice_control_rows']=int(control[rows].sum());rec['slice_context_counts']=obs.iloc[rows]['cell_type'].value_counts().to_dict()
+              rec['slice_criteria']='24h; all available control observations or 10uM treatment; no expression-based selection'
+              parts=[]
+              for start in range(0,len(rows),18000):
+                  sel=rows[start:start+18000]
+                  if isinstance(x,h5py.Dataset): a=x[sel,:]
+                  elif str(x.attrs.get('encoding-type',''))=='csr_matrix':
+                      ip=x['indptr'][()];data=[];indices=[];ptr=[0]
+                      for row in sel:
+                          lo,hi=int(ip[row]),int(ip[row+1]);data.extend(x['data'][lo:hi]);indices.extend(x['indices'][lo:hi]);ptr.append(len(data))
+                      a=sparse.csr_matrix((np.asarray(data),np.asarray(indices),np.asarray(ptr)),shape=(len(sel),shape[1])).toarray()
+                  else:raise ValueError('Unsupported X encoding')
+                  name=f'exported/part_{start//18000:03d}.npz'
+                  np.savez_compressed(name,X=a,original_rows=sel)
+                  parts.append({'file':name,'shape':a.shape,'sha256':hashlib.sha256(pathlib.Path(name).read_bytes()).hexdigest(),'bytes':pathlib.Path(name).stat().st_size})
+              rec['parts']=parts
+          pathlib.Path('audit/acquisition.json').write_text(json.dumps(rec,indent=2,default=str))
+          print('COMPLETE',json.dumps({'rows':len(rows),'parts':parts}),flush=True)
+          PY
+      - name: Save metadata and audit
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: l1000-v4-audit-${{ github.run_id }}
+          path: audit/
+          retention-days: 14
+          if-no-files-found: error
+      - name: Save public extracted numeric slice
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: l1000-v4-slice-${{ github.run_id }}
+          path: exported/
+          compression-level: 0
+          retention-days: 14
+          if-no-files-found: error
