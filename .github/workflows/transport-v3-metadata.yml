@@ -1,0 +1,41 @@
+name: Transport v3 asset metadata
+on:
+  push:
+    branches: [research/transport-v3-20260908]
+    paths: [.github/workflows/transport-v3-metadata.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Read fixed public dataset file metadata only
+        shell: bash
+        run: |
+          python - <<'PY'
+          import urllib.request, json, pathlib, hashlib
+          root=pathlib.Path('metadata'); root.mkdir()
+          rev='6c54c8eb0321cceff4f888c54e199077d055e20b'
+          base='https://huggingface.co'
+          url=f'{base}/api/datasets/theislab/chem-perturbridge/revision/{rev}?blobs=true'
+          with urllib.request.urlopen(url,timeout=30) as r:
+              data=r.read(4_000_001)
+          if len(data)>4_000_000: raise RuntimeError('Metadata byte cap exceeded')
+          obj=json.loads(data)
+          (root/'hub_metadata.json').write_bytes(data)
+          chosen=[x for x in obj.get('siblings',[]) if x['rfilename'] in [
+              'tahoe/tahoe_processed.h5ad',
+              'l1000_phase1/l1000_phase1_level3_deg_ready_landmark_processed.h5ad',
+              'l1000_phase2/l1000_phase2_level3_deg_ready_landmark_processed.h5ad']]
+          out={'revision':rev,'files':chosen,'metadata_sha256':hashlib.sha256(data).hexdigest(),'numerical_expression_read':False}
+          (root/'selected_assets.json').write_text(json.dumps(out,indent=2))
+          print(json.dumps(out,indent=2))
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: transport-v3-metadata-${{ github.run_id }}
+          path: metadata/
+          retention-days: 7
+          if-no-files-found: error
