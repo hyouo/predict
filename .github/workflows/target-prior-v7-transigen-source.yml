@@ -1,0 +1,37 @@
+name: Fixed TranSiGen source audit v7
+on:
+  push:
+    branches: [research/target-prior-v7-20260909]
+    paths: [.github/workflows/target-prior-v7-transigen-source.yml]
+permissions:
+  contents: read
+jobs:
+  source:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - name: Retrieve only source files at fixed author revision
+        run: |
+          mkdir -p transigen
+          python3 - <<'PY'
+          import urllib.request,pathlib,json,hashlib
+          rev='e7582e7794f13d4dfddfb15e95e3ba7cd24bc07a'
+          files={'LICENSE':'5b8ff713730bbf95f97fa8e87ab53c48880ca264','README.md':'db406f0f832ce73ac8ba4b119dfe8a0ac4db553e','src/model.py':'d2de2b9e091cd84f4f32625dc07a1bba6e157ec3','src/utils.py':'73cc7dbceca17949b773195464a8d42c665a061e','src/train_TranSiGen_full_data.py':'771fc1c438b1d2e88776c0017e51648f654186c4','src/prediction.py':'4eb7b261f6c60efeb6085f8a3440701ad205e4e1'}
+          records=[]
+          for file,expected in files.items():
+            url=f'https://raw.githubusercontent.com/myzhengSIMM/TranSiGen/{rev}/{file}'
+            with urllib.request.urlopen(url,timeout=30) as response:data=response.read(1000001)
+            if len(data)>1000000:raise ValueError('source byte limit')
+            blob=hashlib.sha1(b'blob '+str(len(data)).encode()+b'\0'+data).hexdigest()
+            if blob!=expected:raise ValueError('author source Git blob hash mismatch')
+            p=pathlib.Path('transigen')/file;p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(data)
+            records.append({'file':file,'url':url,'revision':rev,'git_blob':blob,'sha256':hashlib.sha256(data).hexdigest(),'bytes':len(data)})
+          pathlib.Path('transigen/SOURCE_MANIFEST.json').write_text(json.dumps(records,indent=2))
+          PY
+      - name: Save source-only audit
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: transigen-v7-source-${{ github.run_id }}
+          path: transigen/
+          retention-days: 14
+          if-no-files-found: error
