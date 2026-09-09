@@ -1,0 +1,22 @@
+{
+  "retrospective_development": true,
+  "target_treatment_calibrations": 0,
+  "joint_prediction_freeze_sha256": "072bceb7be7764860688f95f6297d9019d156510dd427747b1ce15203fda54c0",
+  "native_freeze_sha256": "dd0badad97326c146afa2f4406d2b6ece1a448c95c25fbd2bbcb1208f4caaf3b",
+  "same_structure_linear_freeze_sha256": "4a82289d0687fe333651486c83d7b50fda91799d3fb49492aad2e4c1f25ed307",
+  "native_source_commit": "e7582e7794f13d4dfddfb15e95e3ba7cd24bc07a",
+  "native_model_py_sha256": "c328864a040a3c1a1e69b040f31a27572513b1974a93d722e3ff00d4cdd940c7",
+  "native_variant": "Author class, forward and loss unchanged; random-init ECFP4 with author Xavier initialization. Local paired-L1000 data and latent-mean inference adapter. Not the strongest pretrained KPGT/shRNA paper model.",
+  "selection_epochs_executed": 175,
+  "selected_epoch": 25,
+  "selection_hit_300_epoch_cap": false,
+  "final_training_profiles": 8472,
+  "final_refit_epochs": 25,
+  "independent_same_seed_refit_tensors_equal": 51,
+  "final_checkpoint_sha256": "d4652b698b141498757f96fe251bd93b22f7ea0ffd7f1b88b29e6413b081ae1d",
+  "additional_comparators": "Same molecular fingerprints and paired source levels; additive and baseline-by-fingerprint ridge, with source-only PCA8/PCA32, common validation-only amplitude and source-RBF convex fusion. Native molecule-only has less source-query-response information; superiority is not inferred from that asymmetric comparison.",
+  "secondary_inference_diagnostic": "Subtracting beta times observable untreated reconstruction residual; beta chosen on permitted validation contexts only. This is not author-default inference. A context-constant subtraction cannot improve drug-centered retrieval by itself.",
+  "prediction_models": 14,
+  "scoring_status_at_record": "not yet scored for this resumed native joint table",
+  "no_default_model_update": true
+}
