@@ -1,0 +1,38 @@
+name: Public pathway annotations v7
+on:
+  push:
+    branches: [research/target-prior-v7-20260909]
+    paths: [.github/workflows/target-prior-v7-pathways.yml]
+permissions:
+  contents: read
+jobs:
+  fetch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - name: Retrieve version-named public gene sets
+        run: |
+          mkdir -p pathways
+          python3 - <<'PY'
+          import urllib.request, hashlib, pathlib, json, datetime
+          url='https://maayanlab.cloud/Enrichr/geneSetLibrary?mode=text&libraryName=Reactome_2022'
+          rec={'url':url,'library':'Reactome_2022','retrieved_utc':datetime.datetime.now(datetime.timezone.utc).isoformat()}
+          try:
+            with urllib.request.urlopen(url,timeout=50) as response: data=response.read(25000001)
+            if len(data)>25000000: raise ValueError('byte cap exceeded')
+            text=data.decode('utf-8')
+            if len(text.splitlines())<100 or '\t' not in text: raise ValueError('not a gene-set library')
+            pathlib.Path('pathways/Reactome_2022.gmt').write_bytes(data)
+            rec.update(status='success',bytes=len(data),sha256=hashlib.sha256(data).hexdigest())
+          except Exception as exc:
+            rec.update(status='failed',error=str(exc))
+          pathlib.Path('pathways/acquisition.json').write_text(json.dumps(rec,indent=2))
+          print(json.dumps(rec),flush=True)
+          PY
+      - name: Store public pathways and manifest
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: target-prior-v7-pathways-${{ github.run_id }}
+          path: pathways/
+          retention-days: 14
+          if-no-files-found: error
