@@ -1,0 +1,48 @@
+name: Public target annotations v7
+on:
+  push:
+    branches: [research/target-prior-v7-20260909]
+    paths: [.github/workflows/target-prior-v7-assets.yml]
+permissions:
+  contents: read
+jobs:
+  fetch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Retrieve bounded public annotation files
+        run: |
+          mkdir -p annotations
+          python3 - <<'PY'
+          import urllib.request, hashlib, pathlib, json, datetime
+          root=pathlib.Path('annotations')
+          urls={
+            'repurposing_drugs_20200324.txt':'https://s3.amazonaws.com/data.clue.io/repurposing/downloads/repurposing_drugs_20200324.txt',
+            'repurposing_samples_20200324.txt':'https://s3.amazonaws.com/data.clue.io/repurposing/downloads/repurposing_samples_20200324.txt',
+            'ReactomePathways.gmt.zip':'https://reactome.org/download/current/ReactomePathways.gmt.zip',
+            'reactome_version.json':'https://reactome.org/ContentService/data/database/version'
+          }
+          records=[]
+          for name,url in urls.items():
+            rec={'file':name,'url':url,'retrieved_utc':datetime.datetime.now(datetime.timezone.utc).isoformat()}
+            try:
+              with urllib.request.urlopen(url, timeout=35) as r:
+                data=r.read(25000001)
+              if len(data)>25000000: raise ValueError('annotation byte cap exceeded')
+              (root/name).write_bytes(data)
+              rec.update(status='success',bytes=len(data),sha256=hashlib.sha256(data).hexdigest())
+            except Exception as exc:
+              rec.update(status='failed',error=str(exc))
+            records.append(rec)
+            print(json.dumps(rec),flush=True)
+          (root/'acquisition.json').write_text(json.dumps(records,indent=2))
+          if records[0]['status']!='success': raise RuntimeError('required drug-target annotation not retrieved')
+          PY
+      - name: Store annotations and acquisition record
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: target-prior-v7-annotations-${{ github.run_id }}
+          path: annotations/
+          retention-days: 14
+          if-no-files-found: error

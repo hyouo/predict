@@ -1,0 +1,14 @@
+{
+  "recorded_utc": "2026-09-09T05:08:50.382978+00:00",
+  "scope": "Retrospective continuation, not a new blind test. Earlier v7 protocol and freeze remain unchanged.",
+  "prior_remote_v7_exposure": true,
+  "target_treatment_calibrations": 0,
+  "resumption_protocol_sha256": "8ffdd1975425fdbcf60848407082c6ebf0350870de8b6513cdeb101f734b3726",
+  "primary_freeze_sha256": "c7562526749e0eba692d939a5a91e6cb5ead96e5d34627c0aac469d9960eafde",
+  "tissue_freeze_sha256": "eb74bf5aa69f2721c02832429bafc38a5206b17add3eb337d327998b82d722cc",
+  "score_code_sha256": "1b5efa32fc74156850324cdec3b575561a50e40d86289eac8bbab19d83ca1b12",
+  "models_per_scenario": ["rbf","linear","direct","random_direct","pathway","random_pathway","target_residual","random_target_residual","count_residual","source_mean","zero"],
+  "native_test_scored": false,
+  "native_initialization_correction": "Author training script uses init_w=True. The class-default-False source-only run was terminated and preserved without target scoring. Restart author Xavier initialization before comparator scoring, all other registered dimensions, loss, optimizer and seed unchanged. This is a random-init ECFP4 adapter, not the paper's strongest pretrained model.",
+  "publication_status": "No superiority release; no default model update. Full implementation and resumption history will be delivered separately."
+}
