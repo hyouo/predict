@@ -1,0 +1,39 @@
+name: v8 upstream core audit
+on:
+  push:
+    branches: [research/joint-prior-v8-20260910]
+    paths: [.github/workflows/v8-upstream-core-audit.yml]
+permissions:
+  contents: read
+jobs:
+  acquire:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - name: Retrieve and hash two public source files
+        run: |
+          mkdir upstream
+          python3 - <<'PY'
+          import urllib.request,pathlib,hashlib,json
+          rev='e7582e7794f13d4dfddfb15e95e3ba7cd24bc07a'
+          files={'src/model.py':'d2de2b9e091cd84f4f32625dc07a1bba6e157ec3','LICENSE':'5b8ff713730bbf95f97fa8e87ab53c48880ca264'}
+          records=[]
+          for path,expected in files.items():
+              url='https://raw.githubusercontent.com/myzhengSIMM/TranSiGen/'+rev+'/'+path
+              with urllib.request.urlopen(url,timeout=30) as response:
+                  raw=response.read(100001)
+              if len(raw)>100000: raise ValueError('source byte cap')
+              blob=hashlib.sha1(('blob '+str(len(raw))+'\0').encode()+raw).hexdigest()
+              if blob!=expected: raise ValueError('upstream blob mismatch')
+              name=path.replace('/','_');pathlib.Path('upstream',name).write_bytes(raw)
+              records.append({'file':name,'upstream_path':path,'revision':rev,'git_blob':blob,'sha256':hashlib.sha256(raw).hexdigest(),'bytes':len(raw),'url':url})
+          pathlib.Path('upstream/manifest.json').write_text(json.dumps(records,indent=2))
+          print(json.dumps(records,indent=2))
+          PY
+      - name: Retain upstream public source audit
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: v8-upstream-core-${{ github.run_id }}
+          path: upstream/
+          retention-days: 14
+          if-no-files-found: error
