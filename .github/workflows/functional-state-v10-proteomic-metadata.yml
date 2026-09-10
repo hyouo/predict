@@ -1,0 +1,42 @@
+name: Functional state v10 proteomic metadata
+on:
+  push:
+    branches: [research/functional-state-v10-20260910]
+    paths: [.github/workflows/functional-state-v10-proteomic-metadata.yml]
+permissions:
+  contents: read
+jobs:
+  metadata:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - name: Retrieve official experiment summary only
+        run: |
+          mkdir -p metadata
+          python3 - <<'PY'
+          import urllib.request, pathlib, json, hashlib, datetime
+          root=pathlib.Path('metadata')
+          base='https://ftp.pride.ebi.ac.uk/pride/data/archive/2023/03/PXD037285/'
+          urls={'directory.html':base, 'Experiment_summary.xlsx':base+'Experiment_summary.xlsx'}
+          records=[]
+          for name,url in urls.items():
+              r={'file':name,'url':url,'retrieved_utc':datetime.datetime.now(datetime.timezone.utc).isoformat()}
+              try:
+                  with urllib.request.urlopen(url,timeout=30) as response:
+                      data=response.read(5000001)
+                  if len(data)>5000000: raise ValueError('metadata-only 5 MB cap exceeded')
+                  if name.endswith('.xlsx') and not data.startswith(b'PK'): raise ValueError('not an XLSX archive')
+                  (root/name).write_bytes(data)
+                  r.update(status='success',bytes=len(data),sha256=hashlib.sha256(data).hexdigest())
+              except Exception as e:r.update(status='failed',error=str(e))
+              records.append(r);print(json.dumps(r),flush=True)
+          (root/'acquisition.json').write_text(json.dumps(records,indent=2))
+          PY
+      - name: Store audit and failures
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: functional-state-v10-proteomic-metadata-${{ github.run_id }}
+          path: metadata/
+          retention-days: 14
+          if-no-files-found: error
