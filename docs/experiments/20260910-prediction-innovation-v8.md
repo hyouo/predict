@@ -1,0 +1,11 @@
+# v8 extension: learn the prediction innovation rather than an arbitrary residual
+
+Date: 2026-09-10. Added after inspecting source-only validation of the initial v8 candidates and before any v8 target scoring. The local protocol and four mathematical checks preceded these new fits; this remote checkpoint follows their start. Existing test outcomes have been exposed in earlier project research. This is exploratory development, not fresh blind confirmation.
+
+For a fixed source-only kernel and representation, eliminate each compound's free intercept with P = A^-1 - A^-1 1 (1^T A^-1 1)^-1 1^T A^-1, where A=K+lambda I. T=diag(P)^-1 P gives the exact leave-source-context-out kernel residual. Fit T Y on the prior innovation (T Z) tensor h by positive-scale ridge. This optimizes the correction actually expressible after source-residual interpolation, rather than the raw response. It remains classical linear-smoother and ridge algebra, not a new universal theorem.
+
+Compare three named candidates with all prior v8 controls: unweighted innovation, context-balanced innovation, and context-balanced innovation with supervised-source response excluded from its drug summary. The last uses the same source-only global SVD basis; that basis itself is not internally cross-fitted, so inner training residuals are not claimed to estimate unbiased deployment risk.
+
+Keep the original full-cohort and tissue-source-excluded tasks. Use residual penalties .01,.1,1,10,100; prior penalties .1,1,10; correction strength1; and an independently calibrated RBF null fallback. Only held validation contexts select parameters. Preserve full978-gene outputs, all fixed target rows, source-query information, and zero target treatment calibration. The separate chemical/native-architecture comparison remains matched to its1038-compound source cohort, not directly ranked against this full cohort.
+
+Four local checks verify T against explicit leave-one-out kernel solves, all three normal equations against explicit observation designs, free compound-offset invariance for fixed features, and zero-response behavior. Final target predictions and all adversarial metrics remain to be evaluated. No default-model change, paid compute, automatic merge or superiority claim.
