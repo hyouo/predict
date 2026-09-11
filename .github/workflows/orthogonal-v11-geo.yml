@@ -1,0 +1,41 @@
+name: Orthogonal v11 original GEO deposition audit
+on:
+  push:
+    branches: [research/orthogonal-v11-20260911]
+    paths: [.github/workflows/orthogonal-v11-geo.yml]
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Read original public series file inventory and primary methods
+        run: |
+          mkdir -p original
+          python3 - <<'PY'
+          import urllib.request,pathlib,hashlib,json,datetime
+          root=pathlib.Path('original');rows=[]
+          urls={
+            'GSE101406_listing.html':'https://ftp.ncbi.nlm.nih.gov/geo/series/GSE101nnn/GSE101406/suppl/',
+            'GSE101406_miniml.xml':'https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE101406&targ=self&form=xml&view=full',
+            'PMC5951639.xml':'https://www.ebi.ac.uk/europepmc/webservices/rest/PMC5951639/fullTextXML',
+            'PMC8387426.xml':'https://www.ebi.ac.uk/europepmc/webservices/rest/PMC8387426/fullTextXML'
+          }
+          for name,url in urls.items():
+            rec={'url':url,'file':name,'retrieved_utc':datetime.datetime.now(datetime.timezone.utc).isoformat()}
+            try:
+              with urllib.request.urlopen(url,timeout=35) as r:data=r.read(12000001)
+              if len(data)>12000000:raise ValueError('public metadata size cap exceeded')
+              (root/name).write_bytes(data);rec.update(status='success',bytes=len(data),sha256=hashlib.sha256(data).hexdigest())
+            except Exception as e:rec.update(status='failed',error=str(e))
+            rows.append(rec);print(json.dumps(rec),flush=True)
+            (root/'acquisition.json').write_text(json.dumps(rows,indent=2))
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: orthogonal-v11-original-${{ github.run_id }}
+          path: original/
+          retention-days: 14
+          if-no-files-found: error
