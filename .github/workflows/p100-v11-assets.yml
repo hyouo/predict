@@ -1,0 +1,68 @@
+name: P100 GCP v11 bounded acquisition
+on:
+  push:
+    branches: [research/p100-v11-20260911]
+    paths: [.github/workflows/p100-v11-assets.yml]
+permissions:
+  contents: read
+jobs:
+  acquire:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Read official inventories and retrieve selected public Level 3 files
+        run: |
+          mkdir -p acquisition
+          python3 -u - <<'PY'
+          from html.parser import HTMLParser
+          import urllib.request, urllib.parse, pathlib, hashlib, json, re, datetime, concurrent.futures
+          root=pathlib.Path('acquisition')
+          portals={'P100':'https://panoramaweb.org/project/LINCS/P100/begin.view','GCP':'https://panoramaweb.org/project/LINCS/GCP/begin.view','levels':'https://panoramaweb.org/labkey/wiki/LINCS/page.view?name=LINCS_PCCSE_Data_Levels'}
+          plates={'15','16','17','18','19','20','22','23','24','25','27','28','29','30','31','32','33','34','29_03H','29_06H','29_24H','58','59','60','61','62','63','64','65','66','67'}
+          class Links(HTMLParser):
+            def __init__(self): super().__init__(); self.urls=[]
+            def handle_starttag(self,tag,attrs):
+              if tag=='a':
+                u=dict(attrs).get('href')
+                if u:self.urls.append(u)
+          def get(url,name,cap=8000000):
+            rec={'url':url,'file':name,'retrieved_utc':datetime.datetime.now(datetime.timezone.utc).isoformat()}
+            try:
+              with urllib.request.urlopen(url,timeout=35) as r:
+                data=r.read(cap+1); rec['final_url']=r.url;rec['http_status']=r.status
+              if len(data)>cap:raise ValueError('single file byte limit exceeded')
+              if name.endswith('.gct') and not data.lstrip().startswith(b'#1.'):raise ValueError('response is not GCT')
+              (root/name).write_bytes(data)
+              rec.update(status='success',bytes=len(data),sha256=hashlib.sha256(data).hexdigest())
+            except Exception as exc:rec.update(status='failed',error=repr(exc))
+            print(json.dumps(rec),flush=True)
+            return rec
+          records=[];selected={}
+          for label,url in portals.items():
+            rec=get(url,label+'.html');records.append(rec)
+            if rec['status']!='success' or label=='levels':continue
+            p=Links();p.feed((root/(label+'.html')).read_text(errors='replace'))
+            for u in p.urls:
+              u=urllib.parse.urljoin(url,u);name=urllib.parse.unquote(urllib.parse.urlparse(u).path.rsplit('/',1)[-1])
+              m=re.search(r'_Plate(\d+(?:_\d\dH)?)_',name)
+              if urllib.parse.urlparse(u).hostname=='panoramaweb.org' and m and m.group(1) in plates and name.endswith('_LVL3.gct'):
+                selected[name]=u
+          if len(selected)>100:raise RuntimeError('maximum 100 numeric files')
+          (root/'selected_urls.json').write_text(json.dumps(selected,indent=2))
+          with concurrent.futures.ThreadPoolExecutor(max_workers=3) as ex:
+            futures=[ex.submit(get,u,n) for n,u in sorted(selected.items())]
+            records.extend(f.result() for f in futures)
+          total=sum(r.get('bytes',0) for r in records)
+          if total>100000000:raise RuntimeError('total byte cap exceeded')
+          (root/'manifest.json').write_text(json.dumps({'records':records,'numeric_files_selected':len(selected),'bytes':total,'training_performed':False,'metadata_audit_pending':True},indent=2))
+          if not any(r['status']=='success' and r['file'].endswith('.gct') for r in records):raise RuntimeError('no numeric GCT retrieved')
+          PY
+      - name: Preserve public files, checksums and failures
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: p100-gcp-v11-${{ github.run_id }}
+          path: acquisition/
+          retention-days: 14
+          if-no-files-found: error
+          compression-level: 6
