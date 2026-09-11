@@ -1,0 +1,77 @@
+name: v12 cross-release reference audit
+on:
+  push:
+    branches: [research/crossassay-v12-20260911]
+    paths: [.github/workflows/crossassay-v12-phase2-reference.yml]
+permissions:
+  contents: read
+jobs:
+  extract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Install bounded data readers
+        run: python3 -m pip install numpy==2.3.5 pandas==2.2.3 scipy==1.17.0 h5py==3.15.1
+      - name: Verify public source and extract metadata-defined LPROT 6h rows
+        env:
+          OPENBLAS_NUM_THREADS: '1'
+          OMP_NUM_THREADS: '1'
+        run: |
+          mkdir -p audit
+          python3 -u - <<'PY'
+          import json, urllib.request, hashlib, datetime, pathlib
+          import h5py, numpy as np, pandas as pd
+          from scipy import sparse
+          out=pathlib.Path('audit')
+          url='https://huggingface.co/datasets/theislab/chem-perturbridge/resolve/6c54c8eb0321cceff4f888c54e199077d055e20b/l1000_phase2/l1000_phase2_level3_deg_ready_landmark_processed.h5ad?download=true'
+          expected='34d198df9eddac5b535a0408794caaf41073fa014c74429d1050e483576fb581'
+          p=pathlib.Path('/tmp/phase2.h5ad');h=hashlib.sha256();size=0
+          rec={'url':url,'expected_sha256':expected,'time_utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'purpose':'measurement identity and absent-reference audit only','training_performed':False}
+          def text(v): return v.decode('utf8') if isinstance(v,bytes) else str(v)
+          def col(n):
+              if isinstance(n,h5py.Dataset):
+                  a=n[()]
+                  return np.asarray([text(v) for v in a]) if a.dtype.kind in 'SO' else a
+              if 'categories' in n and 'codes' in n:
+                  a=col(n['categories']);return np.asarray([None if i<0 else a[i] for i in n['codes'][()]],object)
+              if 'values' in n and 'mask' in n:
+                  a=col(n['values']).astype(object);a[n['mask'][()]]=None;return a
+              raise ValueError('Unsupported column encoding: '+n.name)
+          def frame(g):
+              ix=text(g.attrs.get('_index','_index'));return pd.DataFrame({k:col(v) for k,v in g.items() if k!=ix},index=col(g[ix]))
+          try:
+              with urllib.request.urlopen(url,timeout=90) as src,p.open('wb') as dst:
+                  for block in iter(lambda:src.read(1048576),b''):
+                      size+=len(block)
+                      if size>800000000:raise ValueError('download cap')
+                      dst.write(block);h.update(block)
+              if size!=707799618 or h.hexdigest()!=expected:raise ValueError('source checksum or size mismatch')
+              print('VERIFIED',size,h.hexdigest(),flush=True)
+              with h5py.File(p,'r') as f:
+                  obs=frame(f['obs']);var=frame(f['var']);obs.insert(0,'original_row',np.arange(len(obs)))
+                  mask=obs['plate'].astype(str).str.strip().str.startswith('LPROT') & np.isclose(pd.to_numeric(obs['pert_time_h'],errors='coerce'),6)
+                  rows=np.flatnonzero(mask)
+                  if not 100<len(rows)<15000:raise ValueError('Unexpected LPROT scope')
+                  x=f['X']
+                  if isinstance(x,h5py.Dataset):a=x[rows,:]
+                  elif x.attrs.get('encoding-type')=='csr_matrix':
+                      full=sparse.csr_matrix((x['data'][:],x['indices'][:],x['indptr'][:]),shape=tuple(x.attrs['shape']));a=full[rows].toarray();del full
+                  else:raise ValueError('Unsupported matrix')
+                  if a.shape!=(len(rows),len(var)) or not np.isfinite(a).all():raise ValueError('Bad extraction')
+                  obs.iloc[rows].to_csv(out/'metadata.csv.gz');var.to_csv(out/'genes.csv.gz')
+                  np.savez_compressed(out/'measurements.npz',X=a,original_rows=rows,genes=var.index.astype(str).to_numpy())
+              rec.update(status='success',source_sha256=h.hexdigest(),source_bytes=size,selected_rows=len(rows),features=len(var),selection='plate begins LPROT; time exactly 6h; no expression/QC-outcome-based selection',files={q.name:{'bytes':q.stat().st_size,'sha256':hashlib.sha256(q.read_bytes()).hexdigest()} for q in out.iterdir()})
+              print(json.dumps(rec),flush=True)
+          except Exception as exc:
+              rec.update(status='failed',error=repr(exc));raise
+          finally:
+              (out/'acquisition.json').write_text(json.dumps(rec,indent=2))
+          PY
+      - name: Store finite audit payload
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: crossassay-v12-phase2-reference-${{ github.run_id }}
+          path: audit/
+          retention-days: 14
+          if-no-files-found: error
