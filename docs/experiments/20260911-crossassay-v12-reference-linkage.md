@@ -1,0 +1,9 @@
+# v12 reference-linkage audit: preserve earlier results
+
+The recovered paired-assay Stage B is complete and unfavorable to a strong P100-specific increment. No model or test definition will be changed by this audit. The previous Phase-II metadata contains 1,102 same-detection-plate/well/time/drug-name rows as GSE101406 and 16 vehicle rows on named plates absent from the GSE101406 files. A missing vehicle in one released file does NOT establish an unmeasured vehicle in the original experiment.
+
+Acquire only the metadata-defined LPROT/6h subset from the already pinned Phase-II file (SHA256 34d198df9eddac5b535a0408794caaf41073fa014c74429d1050e483576fb581; 707799618 bytes; revision 6c54c8eb0321cceff4f888c54e199077d055e20b). The finite read-only workflow has an 800MB download cap and ten-minute timeout, no training, GPU, credentials or default-model mutation. Preserve original row/gene identifiers and hashes.
+
+Join on exact stripped detection plate and normalized alphanumeric well, then independently check drug identity, dose, time, cell identity and measured gene mappings. Compare overlapping numerical measurements before considering any missing control usable; report exact equality and error ranges, not only correlations. Do not align or rescale releases on target outcomes. A same-plate label or high correlation is insufficient evidence of identical normalization, culture, aliquot or preparation. If nontrivial disagreements remain, do not pool the controls. Even exact common values establish measurement provenance, not independent new replication.
+
+The original 30-condition feasibility remains frozen. Any expanded cohort or reference policy requires a separate future protocol and cannot replace the original negative results. No claim of independent-culture prediction or new information gain follows from this audit.
