@@ -1,0 +1,71 @@
+name: Orthogonal v11 checksum-verified original matrices
+on:
+  push:
+    branches: [research/orthogonal-v11-20260911]
+    paths: [.github/workflows/orthogonal-v11-gse-data.yml]
+permissions:
+  contents: read
+jobs:
+  acquire:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Download bounded public matrices and retain publisher checksums
+        run: |
+          mkdir -p dataset
+          python3 - <<'PY'
+          import urllib.request,pathlib,hashlib,json,datetime,gzip
+          root=pathlib.Path('dataset');records=[];total=0
+          base='https://ftp.ncbi.nlm.nih.gov/geo/series/GSE101nnn/GSE101406/suppl/'
+          names=[
+            'GSE101406_SHA512SUMS.txt.gz',
+            'GSE101406_Broad_LINCS_cell_info.txt.gz','GSE101406_Broad_LINCS_pert_info.txt.gz',
+            'GSE101406_Broad_LINCS_P100_inst_info.txt.gz','GSE101406_Broad_LINCS_P100_analyte_info.txt.gz',
+            'GSE101406_Broad_LINCS_GCP_inst_info.txt.gz','GSE101406_Broad_LINCS_GCP_analyte_info.txt.gz',
+            'GSE101406_Broad_LINCS_L1000_inst_info.txt.gz','GSE101406_Broad_LINCS_L1000_gene_info.txt.gz',
+            'GSE101406_Broad_LINCS_P100_Level2_RPT_n1713x96.gctx.gz',
+            'GSE101406_Broad_LINCS_P100_Level3_QCNORM_n1684x96.gctx.gz',
+            'GSE101406_Broad_LINCS_GCP_Level2_RPT_n1721x61.gctx.gz',
+            'GSE101406_Broad_LINCS_GCP_Level3_QCNORM_n1712x59.gctx.gz',
+            'GSE101406_Broad_LINCS_L1000_Level2_GEX_n1667x978.gctx.gz',
+            'GSE101406_Broad_LINCS_L1000_Level3_INF_mlr12k_n1667x12328.gctx.gz'
+          ]
+          expected={}
+          for name in names:
+            rec={'file':name,'url':base+name,'retrieved_utc':datetime.datetime.now(datetime.timezone.utc).isoformat()}
+            try:
+              n=0;h=hashlib.sha256();h512=hashlib.sha512()
+              with urllib.request.urlopen(base+name,timeout=90) as src,(root/name).open('wb') as dst:
+                for block in iter(lambda:src.read(1048576),b''):
+                  n+=len(block);total+=len(block)
+                  if n>80000000 or total>100000000:raise ValueError('public-data byte cap exceeded')
+                  dst.write(block);h.update(block);h512.update(block)
+              rec.update(status='success',bytes=n,sha256=h.hexdigest(),sha512=h512.hexdigest())
+              if name.endswith('SHA512SUMS.txt.gz'):
+                txt=gzip.decompress((root/name).read_bytes()).decode();(root/'SHA512SUMS.txt').write_text(txt)
+                for line in txt.splitlines():
+                  parts=line.split()
+                  if len(parts)>=2:expected[pathlib.Path(parts[-1].lstrip('*')).name]=parts[0]
+              elif name in expected:
+                rec['publisher_checksum_basis']='compressed file'
+                rec['publisher_sha512']=expected[name];rec['publisher_match']=h512.hexdigest()==expected[name]
+              elif name[:-3] in expected:
+                hu=hashlib.sha512()
+                with gzip.open(root/name,'rb') as f:
+                  for block in iter(lambda:f.read(1048576),b''):hu.update(block)
+                rec['publisher_checksum_basis']='uncompressed file';rec['publisher_sha512']=expected[name[:-3]];rec['publisher_match']=hu.hexdigest()==expected[name[:-3]]
+              else:rec['publisher_match']=None
+            except Exception as e:rec.update(status='failed',error=str(e))
+            records.append(rec);print(json.dumps(rec),flush=True)
+            (root/'acquisition.json').write_text(json.dumps(records,indent=2))
+            if rec['status']!='success' or rec.get('publisher_match') is False:raise RuntimeError('Acquisition or publisher checksum failed')
+          print('ALL_GSE_FILES_COMPLETED',total,flush=True)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: orthogonal-v11-gse-data-${{ github.run_id }}
+          path: dataset/
+          compression-level: 0
+          retention-days: 14
+          if-no-files-found: error
