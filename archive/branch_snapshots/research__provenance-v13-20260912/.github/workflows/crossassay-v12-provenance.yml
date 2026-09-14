@@ -1,0 +1,45 @@
+name: GSE101406 provenance documents v12
+on:
+  push:
+    branches: [research/crossassay-v12-20260911]
+    paths: [.github/workflows/crossassay-v12-provenance.yml]
+permissions:
+  contents: read
+jobs:
+  provenance:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - name: Read bounded primary-source documents
+        run: |
+          python3 -u - <<'PY'
+          import urllib.request, pathlib, hashlib, json, datetime
+          root=pathlib.Path('provenance');root.mkdir()
+          urls={
+          'GSE101406_series.soft.txt':'https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE101406&targ=self&form=text&view=full',
+          'article_full.xml':'https://www.ebi.ac.uk/europepmc/webservices/rest/PMC5951639/fullTextXML',
+          'NIHMS964996-supplement-2.xlsx':'https://pmc.ncbi.nlm.nih.gov/articles/instance/5951639/bin/NIHMS964996-supplement-2.xlsx',
+          'GSE101406_family.soft.gz':'https://ftp.ncbi.nlm.nih.gov/geo/series/GSE101nnn/GSE101406/soft/GSE101406_family.soft.gz'}
+          rows=[]
+          for name,url in urls.items():
+              rec={'file':name,'url':url,'time_utc':datetime.datetime.now(datetime.timezone.utc).isoformat()}
+              try:
+                  with urllib.request.urlopen(url,timeout=25) as r: data=r.read(20000001);ct=r.headers.get('Content-Type','')
+                  if len(data)>20000000:raise ValueError('Byte cap exceeded')
+                  if name.endswith('.xlsx') and not data.startswith(b'PK'):raise ValueError('Not an XLSX archive; response content type '+ct)
+                  if name.endswith('.gz') and not data.startswith(b'\x1f\x8b'):raise ValueError('Not gzip')
+                  if name.endswith('.xml') and b'<article' not in data:raise ValueError('Not article XML')
+                  (root/name).write_bytes(data)
+                  rec.update(status='acquired',bytes=len(data),sha256=hashlib.sha256(data).hexdigest(),content_type=ct)
+              except Exception as e:rec.update(status='failed',error=str(e))
+              rows.append(rec);print(json.dumps(rec),flush=True)
+          (root/'MANIFEST.json').write_text(json.dumps(rows,indent=2))
+          PY
+      - name: Archive retrieved provenance and all failures
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: crossassay-v12-provenance-${{ github.run_id }}
+          path: provenance/
+          retention-days: 14
+          if-no-files-found: error

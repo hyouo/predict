@@ -1,0 +1,9 @@
+# Development extension: independent baseline input and response output panels
+
+2026-09-08. Initial validation-context results show that 2000-high-expression-gene bilinear baseline inputs do not yet improve over the no-baseline response-ridge control. Final eight-context treatment effects have NOT been scored or inspected.
+
+The original extraction restricted baseline INPUTS to the same 2000 high-expression genes used for OUTPUT scoring. This need not be a sufficient representation of cell state. Acquire only untreated controls over all 61483 input genes from the same pinned Tahoe file, leaving the original response cohort and 2000-gene output panel unchanged. No new treated query outcomes are used by this acquisition.
+
+Within the 34 training contexts, use A/B split-control cross-context covariance to select reliably variable baseline genes (e.g. 256,1024,4096 retained genes with mean source-control CPM>=1), and fit baseline PCA on training controls. This is a development hypothesis, not a new independent study or a proven causal signal. Compare the identical response-only, baseline-additive, interaction, neighbor and context-kernel families with the original high-expression baseline input. Also test a local gene-wise susceptibility correction and its no-baseline/refit control. All choices use only the eight development validation contexts. The final test contexts remain sealed until the full method/parameter/prediction freeze. A shuffled-baseline control alone will not be used as proof of information value.
+
+No change to final target cohort, dose, time, response-gene panel or primary scoring metric. Preserve the original validation failures. Report total input-information differences explicitly; comparisons must give each relevant method the same available full-control data. More baseline genes are not by themselves evidence of algorithmic novelty.

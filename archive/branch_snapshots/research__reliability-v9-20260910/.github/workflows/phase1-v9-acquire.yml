@@ -1,0 +1,107 @@
+name: Phase I held-context public asset v9
+on:
+  push:
+    branches: [research/reliability-v9-20260910]
+    paths: [.github/workflows/phase1-v9-acquire.yml]
+permissions:
+  contents: read
+jobs:
+  acquire:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      OPENBLAS_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+    steps:
+      - name: Install fixed data readers
+        run: python3 -m pip install numpy==2.3.5 pandas==2.2.3 h5py==3.15.1 scipy==1.17.0
+      - name: Acquire and export metadata-defined held-context slice
+        run: |
+          mkdir -p audit parts
+          python3 -u - <<'PY'
+          import urllib.request,hashlib,json,pathlib,datetime,time
+          import h5py,numpy as np,pandas as pd
+          from scipy import sparse
+          url='https://huggingface.co/datasets/theislab/chem-perturbridge/resolve/6c54c8eb0321cceff4f888c54e199077d055e20b/l1000_phase1/l1000_phase1_level3_deg_ready_landmark_processed.h5ad?download=true'
+          expected='9c3e3a00da8a84a3305771ffebb0b67a55065ef736f9f51b3b012edb586e7c81'
+          excluded={'CVCL_0598','CVCL_0178','CVCL_0027','CVCL_0332','CVCL_2959','CVCL_0031','CVCL_0132','NPC','CVCL_1794','CD34','SKL','CVCL_3383','CVCL_VU89','NEU','CVCL_0065','CVCL_0062','CVCL_0395','CVCL_0035','NPC.TAK','CVCL_0030','CVCL_B161','CVCL_0033','ASC.C','CVCL_0320'}
+          p=pathlib.Path('/tmp/l1000_phase1.h5ad');n=0;h=hashlib.sha256();start=time.time()
+          rec={'url':url,'expected_sha256':expected,'excluded_training_contexts':sorted(excluded),'started_utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'training_performed':False}
+          pathlib.Path('audit/STARTED.json').write_text(json.dumps(rec,indent=2))
+          try:
+            with urllib.request.urlopen(url,timeout=90) as src,p.open('wb') as dst:
+              for a in iter(lambda:src.read(4*1024*1024),b''):
+                n+=len(a)
+                if n>2200000000:raise ValueError('download byte cap')
+                dst.write(a);h.update(a)
+                if n%(128*1024*1024)==0:print('DOWNLOADED',n,round(time.time()-start,1),flush=True)
+            if n!=2165954369 or h.hexdigest()!=expected:raise ValueError('source checksum or size mismatch')
+            rec.update(bytes=n,sha256=h.hexdigest());print('VERIFIED_SOURCE',n,flush=True)
+            def text(v):return v.decode() if isinstance(v,bytes) else str(v)
+            def col(node):
+              if isinstance(node,h5py.Dataset):
+                a=node[()]
+                return np.array([text(v) for v in a],object) if a.dtype.kind in 'OS' else a
+              if 'codes' in node:
+                cats=col(node['categories']);codes=node['codes'][()]
+                return np.array([None if i<0 else cats[i] for i in codes],object)
+              if 'mask' in node:
+                a=col(node['values']).astype(object);a[node['mask'][()]]=None;return a
+              raise ValueError(node.name)
+            def frame(g):
+              ix=text(g.attrs.get('_index','_index'))
+              return pd.DataFrame({k:col(v) for k,v in g.items() if k!=ix},index=col(g[ix]))
+            with h5py.File(p,'r') as f:
+              obs=frame(f['obs']);var=frame(f['var']);obs.insert(0,'original_row',np.arange(len(obs)))
+              ctrl=obs.is_control.astype(str).str.lower().isin(['true','1'])
+              tm=pd.to_numeric(obs.pert_time_h,errors='coerce');ds=pd.to_numeric(obs.pert_dose_uM,errors='coerce')
+              m=np.isclose(tm,24)&(ctrl|np.isclose(ds,10))&~obs.cell_type.astype(str).isin(excluded)
+              sub=obs[m].copy();sub['is_control']=ctrl[m]
+              gc=sub[sub.is_control].groupby(['cell_type','plate']).size();plates=set(gc[gc>=4].index)
+              sub=sub[[tuple(v) in plates for v in sub[['cell_type','plate']].to_numpy()]]
+              counts=sub[~sub.is_control].groupby(['cell_type','perturbagen']).size();eligible=counts[counts>=2].reset_index().groupby('cell_type').size();ct=set(eligible[eligible>=50].index)
+              sub=sub[sub.cell_type.isin(ct)].copy()
+              sub.to_csv('audit/slice_obs.csv.gz');var.to_csv('audit/slice_var.csv.gz')
+              rec.update(original_shape=[len(obs),len(var)],slice_shape=[len(sub),len(var)],context_counts=sub.cell_type.value_counts().to_dict(),slice_rule='24h;10uM treatments/all controls;exclude24PhaseIItrainingcontexts;>=4controls/plate;>=2records/drug;>=50drugs/context;no expression selection')
+              pathlib.Path('audit/METADATA.json').write_text(json.dumps(rec,indent=2,default=str));print('METADATA',json.dumps(rec,default=str),flush=True)
+              if not len(sub):raise ValueError('No eligible held contexts')
+              if len(sub)>160000:raise ValueError('numeric export row cap160000')
+              rows=sub.original_row.to_numpy(int);lookup={int(r):i for i,r in enumerate(rows)};x=f['X'];n_genes=len(var)
+              X=np.empty((len(rows),n_genes),np.float32)
+              if isinstance(x,h5py.Dataset):
+                for j in range(0,len(rows),1000):X[j:j+1000]=x[rows[j:j+1000],:]
+              else:
+                if text(x.attrs['encoding-type'])!='csr_matrix':raise ValueError('Expected CSR')
+                ip=x['indptr'][()]
+                for lo in range(0,len(obs),4000):
+                  hi=min(lo+4000,len(obs));sel=rows[(rows>=lo)&(rows<hi)]
+                  if not len(sel):continue
+                  a,b=int(ip[lo]),int(ip[hi]);block=sparse.csr_matrix((x['data'][a:b],x['indices'][a:b],ip[lo:hi+1]-a),shape=(hi-lo,n_genes))
+                  X[[lookup[int(r)] for r in sel]]=block[sel-lo].toarray()
+              if not np.isfinite(X).all():raise ValueError('Nonfinite numeric export')
+              parts=[]
+              for j in range(0,len(rows),8000):
+                path=pathlib.Path('parts')/f'part_{j//8000:03d}.npz';np.savez_compressed(path,X=X[j:j+8000],original_rows=rows[j:j+8000])
+                parts.append({'file':path.name,'sha256':hashlib.sha256(path.read_bytes()).hexdigest(),'bytes':path.stat().st_size})
+              rec.update(parts=parts,complete=True,elapsed_seconds=time.time()-start)
+              pathlib.Path('audit/acquisition.json').write_text(json.dumps(rec,indent=2,default=str));print('COMPLETE',len(rows),len(parts),flush=True)
+          except Exception as e:
+            rec.update(complete=False,error=str(e),downloaded_bytes=n,elapsed_seconds=time.time()-start)
+            pathlib.Path('audit/FAILED.json').write_text(json.dumps(rec,indent=2,default=str));raise
+          PY
+      - name: Preserve metadata and failure record
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: phase1-v9-audit-${{ github.run_id }}
+          path: audit/
+          retention-days: 14
+          if-no-files-found: error
+      - name: Preserve public numeric slice
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: phase1-v9-numeric-${{ github.run_id }}
+          path: parts/
+          compression-level: 0
+          retention-days: 14
+          if-no-files-found: error

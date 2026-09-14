@@ -1,0 +1,29 @@
+{
+  "ci_run_id": 34015151595,
+  "ci_run_url": "https://github.com/hyouo/predict/actions/runs/34015151595",
+  "ci_job_id": 101437524041,
+  "ci_tests_passed": 45,
+  "ci_log_checked": true,
+  "ci_artifact_id": 9983664817,
+  "ci_artifact_sha256": "00dc63b6d308d8971dc56ae85bef9841980f4794de435aec39770e6382c4c60b",
+  "ci_checkout_commit": "da123bf748722d868d44ade13357f5002498f451",
+  "ci_git_dirty": false,
+  "source_file_hashes_match_local": true,
+  "comparison_tolerances": {
+    "atol": 1e-06,
+    "rtol": 1e-06
+  },
+  "predictions": [
+    {
+      "model": "bootstrap",
+      "max_absolute_prediction_difference": 6.772360450213455e-15,
+      "bitwise_identical": false
+    },
+    {
+      "model": "stacking",
+      "max_absolute_prediction_difference": 2.448519165199059e-11,
+      "bitwise_identical": false
+    }
+  ],
+  "evidence_type": "cross_host_software_reproduction_not_new_biological_evidence"
+}

@@ -1,0 +1,9 @@
+{
+  "reason": "The neighbor line in the human-readable 07_final_prediction_freeze.md was transcribed incorrectly. The original local machine-readable freeze and all numerical arrays are unchanged.",
+  "final_test_treatments_scored_at_this_correction": false,
+  "freeze_sha256": "8d448edb5f3bcccd31fd62fd3a3177506cb87c5d241303f58be034c902050aab",
+  "corrected_entry": {
+    "predictions/neighbors.npz": "5d5599735c6a428b6257e3c91badcec7d70f34a1949332e4cb7f8c55facc1eef"
+  },
+  "affected_predictions_changed": false
+}

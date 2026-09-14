@@ -1,0 +1,60 @@
+name: Original matched GSE101406 assets v11
+on:
+  push:
+    branches: [research/p100-v11-20260911]
+    paths: [.github/workflows/p100-v11-geo.yml]
+permissions:
+  contents: read
+jobs:
+  acquire:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Original GEO supplementary inventory and bounded Level3 retrieval
+        run: |
+          mkdir -p geo
+          python3 -u - <<'PY'
+          import urllib.request,urllib.parse,pathlib,json,hashlib,datetime
+          from html.parser import HTMLParser
+          root=pathlib.Path('geo');base='https://ftp.ncbi.nlm.nih.gov/geo/series/GSE101nnn/GSE101406/suppl/'
+          records=[]
+          def get(url,name,cap=150000000):
+            rec={'url':url,'file':name,'retrieved_utc':datetime.datetime.now(datetime.timezone.utc).isoformat()}
+            try:
+              n=0;h=hashlib.sha256()
+              with urllib.request.urlopen(url,timeout=50) as r,(root/name).open('wb') as f:
+                rec['http_status']=r.status
+                for b in iter(lambda:r.read(1048576),b''):
+                  n+=len(b)
+                  if n>cap:raise ValueError('single file byte cap')
+                  h.update(b);f.write(b)
+              rec.update(status='success',bytes=n,sha256=h.hexdigest())
+            except Exception as exc:
+              rec.update(status='failed',error=repr(exc));(root/name).unlink(missing_ok=True)
+            records.append(rec);print(json.dumps(rec),flush=True)
+            return rec
+          class Links(HTMLParser):
+            def __init__(self):super().__init__();self.links=[]
+            def handle_starttag(self,tag,attrs):
+              if tag=='a' and 'href' in dict(attrs):self.links.append(dict(attrs)['href'])
+          rec=get(base,'inventory.html',3000000)
+          if rec['status']=='success':
+            p=Links();p.feed((root/'inventory.html').read_text())
+            names=sorted({u for u in p.links if u.startswith('GSE101406') and '/' not in u})
+            (root/'all_files.json').write_text(json.dumps(names,indent=2))
+            selected=[n for n in names if any(v in n.lower() for v in ['level3','level_3','lvl3','lvl_3']) or n.lower().endswith('.txt.gz')]
+            if len(selected)>20:raise RuntimeError('more than 20 selected files')
+            for name in selected:get(base+urllib.parse.quote(name),name)
+          get('https://www.ebi.ac.uk/europepmc/webservices/rest/PMC5951639/fullTextXML','original2018.xml',5000000)
+          (root/'manifest.json').write_text(json.dumps(records,indent=2))
+          if sum(r.get('bytes',0) for r in records)>450000000:raise RuntimeError('total size limit exceeded')
+          PY
+      - name: Preserve only completed data, metadata and failure manifest
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: p100-v11-geo-${{ github.run_id }}
+          path: geo/
+          retention-days: 14
+          if-no-files-found: error
+          compression-level: 6

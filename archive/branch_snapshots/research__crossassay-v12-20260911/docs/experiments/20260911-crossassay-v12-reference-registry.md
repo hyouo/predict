@@ -1,0 +1,7 @@
+# v12 reference registry after numeric identity audit
+
+The bounded Phase-II LPROT extraction completed. All 1,102 metadata-matched rows agree exactly on all 978 measured genes: 1,077,756/1,077,756 values are bitwise equal, with no fitted transformation. Drug name, dose (non-vehicle) and time also match. Of24 Phase-II vehicle rows on the shared named plates,16 are absent from GSE101406. Those16 occur on plates whose GSE101406 release has no local vehicle.
+
+Construct an explicit cross-release reference registry and recompute METADATA COVERAGE ONLY. Preserve original GSE101406 references where available; on only the uncovered exact named detection plates, list the additional Phase-II vehicles, original row IDs, equal weights, source SHA256 and exact gene mapping. Do not combine duplicate vehicles or re-label a detection plate as a culture. Conditional-dose matching remains exact; alpelisib dose disagreements and GCP G-0016/G-0016R remain unresolved.
+
+The registry may change the number of eligible conditions but must not overwrite the frozen30-condition feasibility, its preprocessing, predictions or scores. Do not train or score an expanded cohort in this audit. The prospective value of the restored cohort remains a future hypothesis. No new independent biological samples have been collected; releases share measurements. Original single-cell/target-query-free/cross-preparation claims remain untested.

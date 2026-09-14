@@ -1,0 +1,39 @@
+name: Operator v3 public asset audit
+on:
+  push:
+    branches: [research/operator-v3-multicontext-20260908]
+    paths: [.github/workflows/operator-v3-assets.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  metadata:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - name: Inspect public dataset metadata only
+        run: |
+          python3 - <<'PY'
+          import json, urllib.request, pathlib
+          out=pathlib.Path('public_asset_audit');out.mkdir()
+          base='https://huggingface.co/api/datasets/theislab/chem-perturbridge'
+          def get(url):
+              with urllib.request.urlopen(url,timeout=30) as r:
+                  raw=r.read(4000001)
+              if len(raw)>4000000: raise RuntimeError('metadata size cap')
+              return json.loads(raw)
+          info=get(base)
+          sha=info['sha']
+          result={'repository':'theislab/chem-perturbridge','revision':sha,'metadata_only':True,'files':{}}
+          for folder in ['l1000_phase2','tahoe']:
+              tree=get(base+'/tree/'+sha+'/'+folder+'?recursive=false&limit=100')
+              result['files'][folder]=[x for x in tree if x.get('type')=='file']
+          text=json.dumps(result,indent=2)
+          print(text)
+          (out/'metadata.json').write_text(text)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: operator-v3-public-metadata
+          path: public_asset_audit/
+          retention-days: 7

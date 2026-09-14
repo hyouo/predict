@@ -1,0 +1,9 @@
+# v6 extension before current test scoring: gene-specific pathway geometry
+
+The global pathway-kernel validation results have been inspected; no v6 target-test scoring has been run. Add a separately labelled mechanistic-prior hypothesis before any such scoring: global pathway summaries might hide the fact that different response genes depend on different baseline neighbourhoods.
+
+For each output gene g, define nonnegative baseline weights W[g,h] from co-membership in the same externally supplied Reactome pathways, normalized first by pathway size and then by the output gene's pathway degree. Genes with no annotations use the uniform baseline kernel. Mix 50% of this gene-specific linear kernel with 50% of the global full-baseline linear kernel. This is a statistical neighbourhood prior, NOT a signed causal operator. Use the same support-aware affine solver and the same penalty/common/correction grid as the v6 parent protocol.
+
+Compare one real pathway model, five exact-degree-stratified gene relabellings (9101-9105), a self-baseline-only neighbourhood (identity W, same 50% global mixture), and uniform W (must match affine_global). No kernel-mixture tuning is introduced. Primary choice minimizes validation-context MSE; secondary choice minimizes replicated interaction excess with validation MSE as tie-breaker because the common component cancels from the contrast. The same tie-break is explicitly used by the parent v6 implementation. All source-context preprocessing and feature scaling are fit on training contexts only.
+
+Evaluate ordinary and tissue-excluded source settings separately. Preserve all families and null seeds; do not choose the best null or primary model on test outcomes. The prior study remains exposed retrospective development, not a new independent validation. Source-treatment and target-control budgets do not change. Keep the global-prior negative results and all implementation failures.

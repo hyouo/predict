@@ -1,0 +1,40 @@
+{
+  "experiment": "002",
+  "stage": "prediction_seal_before_public_outcome_read",
+  "protocol_commit": "f89de0a0bfbf9c6358b0b0ecb99e45eb479124f4",
+  "data_sha256": "8eaf7e63adc68029e88184726b8545bc3836c3ef2a25b9185dc4e8b819537e59",
+  "code_sha256": {
+    "src/op3_data.py": "d36dbadfdc53197c313c4f8a363214b84a605fc84f5b7bbacecff33b93a9387a",
+    "src/op3_models.py": "68354f907edc0d6906672024de56f27e6437533fff03271cba299f48df41fff0",
+    "src/op3_metrics.py": "4ea6a395d1835a47aeb838a5f9de08e3d1ee60ddf1daa3c36bac791cea638831",
+    "tools/op3_pilot.py": "d53725a21d9af4470315a99b49185a8ede830cee3b2fe9405ce8043f4b087c8f"
+  },
+  "predictions_npz_sha256": {
+    "op3-r0": "6a258f5c49f54a8dcc5184031ed79c3c36dacad21fbb1d1e2fbbfb55a60619f9",
+    "op3-r1": "0b1e32a421603ee392225e6f80f85aff363aec76c43908a4af6129b22102cc1c",
+    "op3-r2": "40fdcc62879d9419a2a35f637ed994b386c862729f5b5eeaf0e204ab1095e6dc",
+    "op3-row-sum": "31c48f77fc22eedc7af64c5fd2c018e48e7cb8b70c8de1304019c49391956258"
+  },
+  "public_target_expression_read": false,
+  "private_target_expression_read": false,
+  "final_control_vectors_used_in_fitting": false,
+  "new_unit_tests_passed_before_evaluation": 20,
+  "lambda_grid": [0.01, 0.1, 1.0, 10.0, 100.0],
+  "gate_lambda_grid": [0.0, 0.01, 0.1, 1.0, 10.0, 100.0],
+  "kernel_families": ["linear", "rbf_median_squared_distance", "equal_linear_rbf"],
+  "gate": {"degree": 2, "baseline_difference_clip": [-4, 4], "scale": 4, "shuffled_gene_seed": 321, "source_compound_folds": "sha256 first 8 hex digits modulo 5"},
+  "stacking": {"simplex": true, "penalty": "0.01 times mean error-Gram diagonal", "prior": "uniform over 38 candidates", "solver": "SLSQP ftol=1e-10 maxiter=500"},
+  "report_all_models": ["zero", "source_mean", "zs_calibrated", "zs_baseline_gate", "zs_shuffled_gate", "source_offset", "shared_slopes", "gene_slope_same", "gene_slope_separated", "direct_krr_same", "direct_krr_separated", "residual_krr_same", "residual_krr_separated", "stack_same", "stack_separated"],
+  "target_public_compounds": {"B": 49, "Myeloid": 47},
+  "target_anchor_compounds": {"B": 12, "Myeloid": 11},
+  "source_permutation_seeds": [0,1,2,3,4,5,6,7,8,9],
+  "source_permutation_plan": "Primary rotation only, full registered refitting budget; shuffle drug correspondence jointly in T/NK. Preserve target anchors and controls. Report each method, not only selected winners. Fixed before public read; predictions for these negative controls may be executed after opening public but no decisions may depend on public results.",
+  "additional_metric_registered_before_public_read": {
+    "name": "plate_orthogonal_mse",
+    "definition": "H[p,b] is the fraction of public drug p target replicates in plate b, based ONLY on metadata. M=I-H*pinv(H). Score norm(M*(prediction-truth))^2 / ((n-rank(H))*G).",
+    "rationale": "An estimated effect equals mean treated log-abundance minus H times control means. M eliminates the shared plate-control nuisance exactly. This changes the estimand to within-design contrasts and cannot assess absolute average effects.",
+    "independence_limit": "Disjoint physical control wells do not establish independence across donor/library/plate effects; no independent donor or causal claim.",
+    "pre_registration_audit_note": "Before protocol, train/control value ranges and row sums were checked for count integrity. Final control vectors were not used for model development. Private/public treatment expression remained unread."
+  },
+  "limitations": ["Globally prefiltered gene panel uses all contexts before split; not a pristine inductive gene-universe benchmark", "Same treated PBMC wells across source and target may share assay/culture variation", "No explicit donor IDs or independent study validation", "Observed target is log retained-library abundance, not signed significance or absolute RNA per cell", "Private outcomes remain sealed", "No latest deep-model comparison or superiority claim"]
+}

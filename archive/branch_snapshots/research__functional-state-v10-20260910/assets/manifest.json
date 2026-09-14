@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "assets": {
+    "auxiliary": {
+      "url": "https://raw.githubusercontent.com/cellnopt/cellnopt/319c956e890ed7ae88c8e6e540de7061acfaae00/cno/datasets/HepG2CancerRes2011/MD-HepG2CancerRes2011.csv",
+      "destination": "data/hepatocyte_signaling_raw.csv",
+      "sha256": "da843e47b33b1a4485244efd59d61176fd7d0554089c3fe4785ebac12cdacc6c",
+      "max_bytes": 1048576,
+      "modality": "auxiliary_phosphoprotein_NOT_RNA",
+      "attribution": "data/ATTRIBUTION.md"
+    },
+    "op3": {
+      "url": "https://huggingface.co/datasets/theislab/chem-perturbridge/resolve/6c54c8eb0321cceff4f888c54e199077d055e20b/op3/op3_standardized_processed.h5ad?download=true",
+      "destination": "data/rna/op3_standardized_processed.h5ad",
+      "sha256": "8eaf7e63adc68029e88184726b8545bc3836c3ef2a25b9185dc4e8b819537e59",
+      "max_bytes": 33554432,
+      "modality": "processed_RNA_semantics_pending_audit",
+      "attribution": "Chem-PerturBridge and Open Problems 2023; GEO GSE279945; preserve upstream terms"
+    },
+    "sciplex": {
+      "url": "https://huggingface.co/datasets/theislab/chem-perturbridge/resolve/6c54c8eb0321cceff4f888c54e199077d055e20b/sciplex/srivatsan20_sciplex3_processed.h5ad?download=true",
+      "destination": "data/rna/srivatsan20_sciplex3_processed.h5ad",
+      "sha256": "8ad35a20e44bf41cb030a0f063eb6a5727965b8f27d0eda4380bda0e294ccc4c",
+      "max_bytes": 167772160,
+      "modality": "processed_RNA_semantics_pending_audit",
+      "attribution": "Chem-PerturBridge and Srivatsan et al. sci-Plex3; preserve upstream terms"
+    }
+  }
+}

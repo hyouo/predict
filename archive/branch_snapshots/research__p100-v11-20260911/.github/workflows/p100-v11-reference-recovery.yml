@@ -1,0 +1,69 @@
+name: LPROT reference recovery audit v11
+on:
+  push:
+    branches: [research/p100-v11-20260911]
+    paths: [.github/workflows/p100-v11-reference-recovery.yml]
+permissions:
+  contents: read
+jobs:
+  acquire:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Install numeric readers
+        run: python3 -m pip install numpy==2.3.5 pandas==2.2.3 h5py==3.15.1 scipy==1.17.0
+      - name: Hash verify parent archive then extract only exact six-hour LPROT records
+        env:
+          OPENBLAS_NUM_THREADS: 1
+        run: |
+          mkdir -p recovery
+          python3 -u - <<'PY'
+          import urllib.request,hashlib,pathlib,json,datetime
+          import h5py,numpy as np,pandas as pd
+          from scipy.sparse import csr_matrix
+          root=pathlib.Path('recovery')
+          url='https://huggingface.co/datasets/theislab/chem-perturbridge/resolve/6c54c8eb0321cceff4f888c54e199077d055e20b/l1000_phase2/l1000_phase2_level3_deg_ready_landmark_processed.h5ad?download=true'
+          expected='34d198df9eddac5b535a0408794caaf41073fa014c74429d1050e483576fb581'
+          h=hashlib.sha256();n=0;p=pathlib.Path('/tmp/parent.h5ad')
+          with urllib.request.urlopen(url,timeout=90) as inp,p.open('wb') as out:
+            for b in iter(lambda:inp.read(1048576),b''):
+              n+=len(b)
+              if n>800000000:raise ValueError('download byte cap')
+              h.update(b);out.write(b)
+          if h.hexdigest()!=expected or n!=707799618:raise ValueError('parent checksum or size mismatch')
+          def col(v):
+            if isinstance(v,h5py.Dataset):
+              a=v[()]
+              return np.asarray([z.decode() if isinstance(z,bytes) else z for z in a]) if a.dtype.kind in 'SO' else a
+            if 'codes' in v:
+              a=col(v['categories']);return np.asarray([None if i<0 else a[i] for i in v['codes'][()]],object)
+            if 'values' in v:
+              a=col(v['values']).astype(object);a[v['mask'][()]]=None;return a
+            raise ValueError('unsupported metadata')
+          def frame(v):
+            key=v.attrs.get('_index','_index');key=key.decode() if isinstance(key,bytes) else key
+            return pd.DataFrame({k:col(d) for k,d in v.items() if k!=key},index=col(v[key]))
+          with h5py.File(p,'r') as f:
+            o=frame(f['obs']);var=frame(f['var']);mask=o['plate'].astype(str).str.startswith('LPROT').to_numpy() & np.isclose(pd.to_numeric(o['pert_time_h']).to_numpy(),6)
+            rows=np.flatnonzero(mask)
+            if len(rows)>10000 or len(rows)==0:raise ValueError('unexpected exact LPROT scope')
+            selected=o.iloc[rows].copy();selected['original_row']=rows;selected.to_csv(root/'obs.csv.gz');var.to_csv(root/'var.csv.gz')
+            x=f['X'];ip=x['indptr'][()];result=np.empty((len(rows),len(var)),np.float32)
+            for start in range(0,len(o),8192):
+              pos=np.flatnonzero((rows>=start)&(rows<start+8192))
+              if not len(pos):continue
+              end=min(start+8192,len(o));lo,hi=int(ip[start]),int(ip[end])
+              block=csr_matrix((x['data'][lo:hi],x['indices'][lo:hi],ip[start:end+1]-lo),shape=(end-start,len(var)))
+              result[pos]=block[rows[pos]-start].toarray()
+          np.savez_compressed(root/'LPROT_6h.npz',X=result,original_rows=rows)
+          rec={'source_url':url,'parent_sha256':expected,'parent_bytes':n,'slice_shape':result.shape,'scope':'only original LPROT 6h records; candidate reference recovery not yet authorized for merging','utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'files':{f.name:hashlib.sha256(f.read_bytes()).hexdigest() for f in root.iterdir()},'normalization_equivalence_verified':False,'training_performed':False}
+          (root/'manifest.json').write_text(json.dumps(rec,indent=2));print(json.dumps(rec),flush=True)
+          PY
+      - name: Preserve candidate controls and exact overlap for numerical equivalence check
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: p100-v11-controls-${{ github.run_id }}
+          path: recovery/
+          retention-days: 14
+          if-no-files-found: error

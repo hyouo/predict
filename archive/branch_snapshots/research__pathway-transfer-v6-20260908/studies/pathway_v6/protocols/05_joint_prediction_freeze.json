@@ -1,0 +1,19 @@
+{
+  "complete": true,
+  "all_target_outcomes_unread_in_v6_at_freeze": true,
+  "prior_test_exposure": true,
+  "interpretation": "retrospective development; these target contexts were already analysed in v4/v5",
+  "parts": {
+    "primary_fit": "3b376e940856b4236c8a131dbe7f5592fba8de06a3171e296d4af3b6a9b97000",
+    "tissue_fit": "ddaa99f689a47c454d9fef15f654da3771b12124b6392383b8a32ac62de4c7f4",
+    "learned_primary_fit": "79e372e6dcec1ed527bdff32eaf0856d18266d96fd34628b1dc610bde6437e71",
+    "learned_tissue_fit": "6526c90d243111f96c1fd5e4804c932c7a4c6ae379f3869cdb2a5dce2d7de539"
+  },
+  "prediction_labels": 70,
+  "aliases_included_not_independent_models": true,
+  "target_treatment_calibration": 0,
+  "held_target_contexts": ["CVCL_0023", "CVCL_5136", "CVCL_U602", "NPC.CAS9", "MNEU.E", "SKL.C"],
+  "prior_asset": "official Reactome97 GMT, sha256 8c1dbc8578431da5d2d5118262718c60b553a9be3398e93658daa069e4a9afd4",
+  "protocol_refs": ["01_scope.md", "02_annotation_and_models.md", "03_source_metric_extension.md", "04_pre_score_diagnostics.md"],
+  "selection": "validation contexts only; initial 8 families, null-self extension, 3 source-only learned metrics; forced-positive-prior diagnostics separately labelled"
+}

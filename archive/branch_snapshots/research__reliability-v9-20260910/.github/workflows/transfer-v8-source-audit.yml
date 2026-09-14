@@ -1,0 +1,37 @@
+name: Pinned comparator source audit v8
+on:
+  push:
+    branches: [research/transfer-v8-20260910]
+    paths: [.github/workflows/transfer-v8-source-audit.yml]
+permissions:
+  contents: read
+jobs:
+  source:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - name: Fetch fixed public author source and license
+        run: |
+          mkdir -p author_source
+          python3 - <<'PY'
+          import urllib.request, pathlib, hashlib, json
+          root=pathlib.Path('author_source'); rev='e7582e7794f13d4dfddfb15e95e3ba7cd24bc07a'
+          files=['LICENSE','README.md','src/model.py','src/utils.py','src/train_TranSiGen_full_data.py','src/prediction.py']
+          expected={'src/model.py':'d2de2b9e091cd84f4f32625dc07a1bba6e157ec3','src/train_TranSiGen_full_data.py':'771fc1c438b1d2e88776c0017e51648f654186c4'}
+          records=[]
+          for name in files:
+              url=f'https://raw.githubusercontent.com/myzhengSIMM/TranSiGen/{rev}/{name}'
+              with urllib.request.urlopen(url,timeout=20) as f: data=f.read(2000001)
+              if len(data)>2000000: raise ValueError('public source byte cap exceeded')
+              blob=hashlib.sha1(b'blob '+str(len(data)).encode()+b'\0'+data).hexdigest()
+              if name in expected and blob!=expected[name]: raise ValueError('author source blob mismatch')
+              p=root/name;p.parent.mkdir(exist_ok=True,parents=True);p.write_bytes(data)
+              records.append({'path':name,'url':url,'sha256':hashlib.sha256(data).hexdigest(),'git_blob':blob,'bytes':len(data)})
+          (root/'MANIFEST.json').write_text(json.dumps({'revision':rev,'files':records,'training_performed':False},indent=2))
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: transfer-v8-author-source-${{ github.run_id }}
+          path: author_source/
+          retention-days: 14
+          if-no-files-found: error

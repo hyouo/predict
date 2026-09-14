@@ -1,0 +1,104 @@
+name: GSE101406 original paired-assay audit v12
+on:
+  push:
+    branches: [research/crossassay-v12-20260911]
+    paths: [.github/workflows/crossassay-v12-acquire.yml]
+permissions:
+  contents: read
+jobs:
+  acquire:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Acquire declared public files and verify publisher checksums
+        run: |
+          python3 -u - <<'PY'
+          import pathlib, urllib.request, hashlib, gzip, json, re, datetime
+          root=pathlib.Path('gse101406');root.mkdir()
+          for d in ('audit','P100','GCP','L1000'): (root/d).mkdir()
+          base='https://ftp.ncbi.nlm.nih.gov/geo/series/GSE101nnn/GSE101406/suppl/'
+          names=[
+          ('Broad_LINCS_cell_info.txt.gz','audit',2000000),
+          ('Broad_LINCS_pert_info.txt.gz','audit',2000000),
+          ('Broad_LINCS_P100_inst_info.txt.gz','audit',2000000),
+          ('Broad_LINCS_P100_analyte_info.txt.gz','audit',2000000),
+          ('Broad_LINCS_GCP_inst_info.txt.gz','audit',2000000),
+          ('Broad_LINCS_GCP_analyte_info.txt.gz','audit',2000000),
+          ('Broad_LINCS_L1000_inst_info.txt.gz','audit',2000000),
+          ('Broad_LINCS_L1000_gene_info.txt.gz','audit',2000000),
+          ('Broad_LINCS_P100_Level2_RPT_n1713x96.gctx.gz','P100',5000000),
+          ('Broad_LINCS_P100_Level3_QCNORM_n1684x96.gctx.gz','P100',5000000),
+          ('Broad_LINCS_GCP_Level2_RPT_n1721x61.gctx.gz','GCP',5000000),
+          ('Broad_LINCS_GCP_Level3_QCNORM_n1712x59.gctx.gz','GCP',5000000),
+          ('Broad_LINCS_L1000_Level2_GEX_n1667x978.gctx.gz','L1000',10000000),
+          ('Broad_LINCS_L1000_Level3_INF_mlr12k_n1667x12328.gctx.gz','L1000',100000000)]
+          ledger=[];total=0
+          def get(name,cap):
+              global total
+              with urllib.request.urlopen(base+name,timeout=40) as r: data=r.read(cap+1)
+              total+=len(data)
+              if len(data)>cap or total>150000000: raise ValueError('Declared byte cap exceeded')
+              return data
+          status='failed'
+          try:
+              n='GSE101406_SHA512SUMS.txt.gz';raw=get(n,2000000)
+              (root/'audit'/n).write_bytes(raw)
+              text=gzip.decompress(raw).decode('utf8')
+              (root/'audit'/'publisher_checksums.txt').write_text(text)
+              print('PUBLISHER_MANIFEST',text,flush=True)
+              sums={}
+              for line in text.splitlines():
+                  match=re.match(r'^([a-fA-F0-9]{128})\s+\*?(.+?)\s*$',line)
+                  if match:
+                      key=pathlib.PurePosixPath(match[2]).name
+                      if key in sums: raise ValueError('Duplicate checksum key')
+                      sums[key]=match[1].lower()
+              if not sums: raise ValueError('No GNU SHA512 entries; inspect saved publisher manifest')
+              ledger.append({'file':n,'status':'manifest_acquired_https','bytes':len(raw),'sha256':hashlib.sha256(raw).hexdigest()})
+              for short,group,cap in names:
+                  name='GSE101406_'+short
+                  candidates=[k for k in [name,short,name.removesuffix('.gz'),short.removesuffix('.gz')] if k in sums]
+                  if len(candidates)!=1: raise ValueError('Missing or ambiguous manifest entry: '+name+' '+str(candidates))
+                  key=candidates[0];data=get(name,cap)
+                  payload=data if key.endswith('.gz') else gzip.decompress(data)
+                  observed=hashlib.sha512(payload).hexdigest()
+                  if observed!=sums[key]: raise ValueError('Publisher SHA512 mismatch for '+name)
+                  (root/group/name).write_bytes(data)
+                  record={'file':name,'group':group,'url':base+name,'status':'verified','bytes':len(data),'sha256':hashlib.sha256(data).hexdigest(),'publisher_name':key,'sha512':observed,'checksum_scope':'compressed' if key.endswith('.gz') else 'decompressed'}
+                  ledger.append(record);print('VERIFIED',json.dumps(record),flush=True)
+              status='complete'
+          except Exception as e:
+              ledger.append({'status':'failed','type':type(e).__name__,'error':str(e)});print('FAILED',repr(e),flush=True)
+          finally:
+              (root/'audit'/'ACQUISITION.json').write_text(json.dumps({'status':status,'retrieved_utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'records':ledger,'training_performed':False,'numeric_outcomes_scored':False},indent=2))
+          if status!='complete': raise SystemExit(1)
+          PY
+      - name: Store manifest and metadata
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: crossassay-v12-audit-${{ github.run_id }}
+          path: gse101406/audit/
+          retention-days: 14
+          if-no-files-found: error
+      - name: Store verified P100
+        if: success()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: crossassay-v12-P100-${{ github.run_id }}
+          path: gse101406/P100/
+          retention-days: 14
+      - name: Store verified GCP
+        if: success()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: crossassay-v12-GCP-${{ github.run_id }}
+          path: gse101406/GCP/
+          retention-days: 14
+      - name: Store verified L1000
+        if: success()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: crossassay-v12-L1000-${{ github.run_id }}
+          path: gse101406/L1000/
+          retention-days: 14
