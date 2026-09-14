@@ -1,0 +1,20 @@
+# v8: joint-prior and deployment-matched transfer tests
+
+Date: 2026-09-10. Retrospective development on the already exposed L1000 Phase II cohort, not a new blind test, external replication, SOTA release or journal submission. Local stage protocols were written before their respective fits. This remote record is committed after fitting began and before this iteration's target scoring; it is not an externally preregistered study.
+
+## Fixed target
+30 metadata contexts, 1,726 compound labels, 978 measured landmark genes, 10 uM, 24 h. Keep supplied Level-3 units, 18/6/6 context split, target untreated A controls and disjoint B scoring controls, source-query response access and >=3-source support. Zero target treatment calibration. Repeat inherited tissue-label source exclusion. Do not conflate this with unseen-compound or new-study generalization.
+
+## New candidates and matched controls
+1. Jointly estimate a source-response mean function and within-compound RBF residual. Exact low-rank GLS/Schur solver, with free compound intercepts. Compare the v7 context-balanced staged prior, a same-function uniform staged prior, and independently calibrated RBF. Global kernel/prior penalties are chosen on validation only. Classical mixed-model algebra is not claimed as a novel theorem.
+2. Nonlinear within-compound-centered response prior: source baseline PCA <=12, source-response SVD <=32, two 128-wide GELU layers, full 978-gene output; 200 full-batch steps; seeds8101/8102/8103. Select epoch and residual blend using held validation contexts, with explicit no-prior fallback. Report boundary choices and all seeds, not only the winner.
+3. Matched non-self source-summary sensitivity: three n>=3 arms (unchanged mean, scaling-only, response summary excluding the supervised source context). All use identical training profiles and grids. The PCA/SVD basis still uses all training sources. Do not mislabel previous source-only summaries as held-target leakage.
+4. Source-verified TranSiGen architecture/loss adaptation at official revision e7582e7794f13d4dfddfb15e95e3ba7cd24bc07a, MIT notice retained. Published widths and six-term objective, from scratch, ECFP4 features, 80-epoch cap versus the published example's300. Exact unique-structure chemical cohort only; refit every statistical comparator on the same restricted source cohort. Compare direct predictions and identical source-residual fusion. This is NOT the original repository's native pretrained benchmark, and cannot establish superiority to the published best model.
+
+## Numerical failures and pre-score amendment
+The original TranSiGen-style adapter at lr0.001 produced a nonfinite training loss for seed8201 before target scoring. Preserve it as failure, not an infinite or zero performance score. A separately named stabilized variant uses lr0.0001, the same objective normalized by batch size and gene count, and gradient-norm clipping at10. No target-label clipping, changed covariance model, hidden pretraining or test-based seed selection. Other original attempts remain recorded. Three fixed stabilized seeds are attempted within bounded CPU time; uncompleted runs must remain uncompleted in the report.
+
+## Evaluation and verification
+Freeze and hash each completed prediction set before target outcome scoring. Use common outcome masks rather than dropping a model's nonfinite predictions. Report total, centered and bias error; magnitude; drug retrieval; exact-reference paired interaction risks; per-context outcomes; chemical coverage; and source exposure. Conditional reweighting fixes fits and measurements, and is not biological-replication or retraining uncertainty. Verify the block GLS solver against a fully augmented dense kernel solve on a small fixture. Refit selected real models and rescore stored full-precision scoring rows.
+
+Keep the existing default model unchanged. No paid compute, unattended research, automatic merge or performance-claim publication. Full implementation and numerical archives are separate deliverables until explicitly uploaded and verified.

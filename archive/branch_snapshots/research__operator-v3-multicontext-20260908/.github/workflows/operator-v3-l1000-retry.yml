@@ -1,0 +1,93 @@
+name: Operator v3 bounded LINCS retry
+on:
+  push:
+    branches: [research/operator-v3-multicontext-20260908]
+    paths: [.github/workflows/operator-v3-l1000-retry.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  acquire:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    env:
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - name: Install pinned readers
+        run: python3 -m pip install numpy==2.3.5 h5py==3.15.1 pandas==2.2.3 scipy==1.17.0
+      - name: Parallel byte ranges with full-file SHA256 validation
+        run: |
+          python3 - <<'PY'
+          import urllib.request,concurrent.futures,pathlib,hashlib,json,time
+          out=pathlib.Path('l1000_v3');out.mkdir()
+          url='https://huggingface.co/datasets/theislab/chem-perturbridge/resolve/6c54c8eb0321cceff4f888c54e199077d055e20b/l1000_phase2/l1000_phase2_level3_deg_ready_landmark_processed.h5ad?download=true'
+          size=707799618;chunk=8*1024*1024;start=time.monotonic()
+          parts=pathlib.Path('parts');parts.mkdir()
+          def download(i):
+              lo=i*chunk;hi=min(size,lo+chunk)-1
+              req=urllib.request.Request(url,headers={'Range':f'bytes={lo}-{hi}'})
+              with urllib.request.urlopen(req,timeout=60) as r:
+                  if r.status!=206:raise RuntimeError('server did not honor bounded Range')
+                  if not r.headers.get('Content-Range','').startswith(f'bytes {lo}-{hi}/'):raise RuntimeError('incorrect Range')
+                  b=r.read(hi-lo+2)
+              if len(b)!=hi-lo+1:raise RuntimeError('range length mismatch')
+              (parts/str(i)).write_bytes(b)
+              print('range',i,'bytes',len(b),'seconds',round(time.monotonic()-start,1),flush=True)
+              return i
+          try:
+              with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
+                  list(pool.map(download,range((size+chunk-1)//chunk)))
+              h=hashlib.sha256()
+              with open('pinned_l1000.h5ad','wb') as f:
+                  for i in range((size+chunk-1)//chunk):
+                      b=(parts/str(i)).read_bytes();f.write(b);h.update(b)
+              if h.hexdigest()!='34d198df9eddac5b535a0408794caaf41073fa014c74429d1050e483576fb581':raise RuntimeError('full checksum mismatch')
+              (out/'download.json').write_text(json.dumps({'source_url':url,'sha256':h.hexdigest(),'bytes':size,'seconds':time.monotonic()-start}))
+              print('FULL_HASH_VERIFIED',flush=True)
+          except Exception as e:
+              (out/'failure.json').write_text(json.dumps({'error':repr(e),'seconds':time.monotonic()-start}))
+              raise
+          PY
+      - name: Extract metadata-defined subset without fitting models
+        run: |
+          python3 - <<'PY'
+          import json,pathlib,hashlib,datetime,time,h5py,numpy as np,pandas as pd
+          from scipy import sparse
+          out=pathlib.Path('l1000_v3');start=time.monotonic()
+          def col(x):
+              if isinstance(x,h5py.Dataset):return x.asstr()[:] if h5py.check_string_dtype(x.dtype) else x[:]
+              if 'categories' in x and 'codes' in x:
+                  c=col(x['categories']);ix=x['codes'][:];return np.array([c[i] if i>=0 else None for i in ix])
+              if 'values' in x and 'mask' in x:
+                  v=col(x['values']).astype(object);v[x['mask'][:]]=None;return v
+              raise ValueError('unsupported column '+x.name)
+          with h5py.File('pinned_l1000.h5ad') as f:
+              print('H5_OPEN',flush=True)
+              obs=pd.DataFrame({k:col(v) for k,v in f['obs'].items()});var=pd.DataFrame({k:col(v) for k,v in f['var'].items()})
+              print('METADATA',obs.shape,var.shape,flush=True)
+              obs.to_csv(out/'all_metadata.csv.gz',index=False);var.to_csv(out/'genes.csv',index=False)
+              ctrl=obs.is_control.astype(str).str.lower().isin(['true','1']).to_numpy()
+              t=pd.to_numeric(obs.pert_time_h,errors='coerce').to_numpy();d=pd.to_numeric(obs.pert_dose_uM,errors='coerce').to_numpy()
+              keep=np.isclose(t,24)&(ctrl|np.isclose(d,10));rows=np.flatnonzero(keep)
+              x=f['X'];shape=list(x.shape) if isinstance(x,h5py.Dataset) else list(x.attrs['shape']);print('SUBSET',len(rows),shape,flush=True)
+              if isinstance(x,h5py.Dataset):values=x[rows]
+              else:
+                  mat=sparse.csr_matrix((x['data'][:],x['indices'][:],x['indptr'][:]),shape=shape);values=mat[rows].toarray()
+              print('MATRIX_READ',values.shape,flush=True)
+              sub=obs.iloc[rows].copy();sub.insert(0,'upstream_row',rows);sub.to_csv(out/'observations.csv.gz',index=False)
+              np.savez_compressed(out/'expression.npz',X=values,upstream_rows=rows);print('SAVED',flush=True)
+              info={'source_url':json.loads((out/'download.json').read_text())['source_url'],'upstream_bytes':707799618,'upstream_sha256':'34d198df9eddac5b535a0408794caaf41073fa014c74429d1050e483576fb581','upstream_shape':shape,'selected_shape':list(values.shape),'selection':'24h and (control or 10uM); metadata only','obs_columns':list(obs),'var_columns':list(var),'matrix_dtype':str(values.dtype),'control_count':int(ctrl[keep].sum()),'context_counts':sub.cell_type.value_counts().to_dict(),'perturbagen_count':int(sub.loc[~ctrl[keep],'perturbagen'].nunique()),'uns_keys':list(f['uns']),'layers':list(f['layers']),'trained':False,'utc':datetime.datetime.now(datetime.timezone.utc).isoformat()}
+              for key in f['uns']:
+                  node=f['uns'][key]
+                  if isinstance(node,h5py.Dataset) and node.size<30:info['uns_'+key]=str(node[()])
+          info['files']={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in out.iterdir()}
+          (out/'acquisition.json').write_text(json.dumps(info,indent=2,default=str));print(json.dumps(info,indent=2,default=str),flush=True)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: operator-v3-l1000-retry-assets
+          path: l1000_v3/
+          retention-days: 14
+          compression-level: 1
+          if-no-files-found: error

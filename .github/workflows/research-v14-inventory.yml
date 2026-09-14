@@ -1,0 +1,50 @@
+name: Research v14 branch inventory
+on:
+  push:
+    branches: [integration/research-v14-20260914]
+    paths: [.github/workflows/research-v14-inventory.yml]
+permissions:
+  contents: read
+jobs:
+  inventory:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Inventory public branches without changing them
+        run: |
+          python3 - <<'PY'
+          import subprocess, pathlib, json, hashlib, datetime
+          out=pathlib.Path('inventory');out.mkdir()
+          subprocess.run(['git','clone','--mirror','https://github.com/hyouo/predict.git','mirror.git'],check=True,timeout=180)
+          repo=pathlib.Path('mirror.git')
+          def git(*args):
+              return subprocess.check_output(['git','--git-dir',str(repo),*args],timeout=120).decode().strip()
+          base='575c325a4dd6f99eb055a305e789932667835b93'
+          if git('rev-parse','refs/heads/main')!=base:
+              raise RuntimeError('Main moved: stop for integration review')
+          refs=git('for-each-ref','--format=%(refname:short)\t%(objectname)','refs/heads').splitlines()
+          records=[]
+          for line in refs:
+              name,sha=line.split('\t')
+              rec={'branch':name,'commit':sha,'tree':git('rev-parse',sha+'^{tree}'),'relative_to_main':git('diff','--name-status',base,sha),'merge_base':git('merge-base',base,sha)}
+              rec['is_ancestor_of_main']=subprocess.run(['git','--git-dir',str(repo),'merge-base','--is-ancestor',sha,base]).returncode==0
+              records.append(rec)
+          (out/'branches.json').write_text(json.dumps({'time_utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'base_main':base,'base_tree':git('rev-parse',base+'^{tree}'),'branches':records},indent=2))
+          with (out/'main.tar').open('wb') as f:
+              subprocess.run(['git','--git-dir',str(repo),'archive',base],stdout=f,check=True,timeout=120)
+          bundle=out/'all-branches.bundle'
+          subprocess.run(['git','--git-dir',str(repo),'bundle','create',str(bundle.resolve()),'--branches'],check=True,timeout=120)
+          subprocess.run(['git','--git-dir',str(repo),'bundle','verify',str(bundle.resolve())],check=True,timeout=120)
+          if sum(p.stat().st_size for p in out.iterdir())>100_000_000:
+              raise RuntimeError('Public source archive exceeds 100 MB cap')
+          manifest={p.name:{'bytes':p.stat().st_size,'sha256':hashlib.sha256(p.read_bytes()).hexdigest()} for p in out.iterdir()}
+          (out/'files.json').write_text(json.dumps(manifest,indent=2))
+          print(json.dumps({'branches':len(records),'files':manifest},indent=2))
+          PY
+      - name: Store source inventory
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: research-v14-branch-inventory-${{ github.run_id }}
+          path: inventory/
+          retention-days: 14
+          if-no-files-found: error

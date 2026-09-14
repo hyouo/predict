@@ -1,0 +1,14 @@
+{
+  "complete": true,
+  "frozen_utc": "2026-09-09T04:34:34.158134+00:00",
+  "joint_freeze_sha256": "d7038b7d2464521a1c988b46f2f48951ea07d22041765052bba99b2290835b20",
+  "annotation_features_sha256": "84eef8d7fe63ec84237a91119cf088886e743f12dc782d91384ac225aa40838d",
+  "n_completed_prediction_files": 26,
+  "n_scenarios": 2,
+  "target_treatment_calibrations": 0,
+  "prior_test_exposure": true,
+  "new_outer_scoring_completed": false,
+  "source_data_sha256": "34d198df9eddac5b535a0408794caaf41073fa014c74429d1050e483576fb581",
+  "models_per_scenario": ["linear", "rbf_fixed", "rbf", "direct", "pathway", "null_direct", "null_pathway", "operator", "null_operator", "direct_forced", "null_direct_forced", "pathway_forced", "null_pathway_forced"],
+  "notes": "Kernel priors have selected eta=0 except tissue null_direct. Cross-fitted target operators have nonzero validation-selected correction strengths. Fixed-prior diagnostics use eta=0.5 and base-RBF validation parameters. Two interrupted batched operator runs have no freeze and will not be scored; complete independent reruns replace them under new output directories. This checkpoint is not a first-use blind-validation claim."
+}

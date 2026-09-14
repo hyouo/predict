@@ -1,0 +1,39 @@
+name: Count operator public metadata audit
+on:
+  push:
+    branches: [research/count-operator-v2-20260907]
+    paths: [.github/workflows/count-operator-metadata.yml]
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Read fixed public dataset sizes only
+        run: |
+          mkdir -p audit
+          python3 - <<'PY'
+          import urllib.request, json, pathlib, datetime
+          base='https://huggingface.co/api/datasets/theislab/chem-perturbridge/tree/6c54c8eb0321cceff4f888c54e199077d055e20b/'
+          out={'time':datetime.datetime.now(datetime.timezone.utc).isoformat(),'public_data_only':True,'numeric_data_read':False,'datasets':{}}
+          for name in ['tahoe','l1000_phase1','l1000_phase2','novartis_batch_2500','vcpi_0001','vcpi_0002']:
+            try:
+              req=urllib.request.Request(base+name,headers={'User-Agent':'predict-research-public-audit'})
+              with urllib.request.urlopen(req,timeout=30) as r:
+                raw=r.read(2000001)
+              if len(raw)>2000000: raise ValueError('metadata response cap')
+              data=json.loads(raw)
+              out['datasets'][name]=data
+              print(name,json.dumps(data),flush=True)
+            except Exception as e:
+              out['datasets'][name]={'error':str(e)}
+              print(name,'ERROR',str(e),flush=True)
+          pathlib.Path('audit/public_asset_sizes.json').write_text(json.dumps(out,indent=2))
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: count-operator-metadata-${{ github.run_id }}
+          path: audit/
+          retention-days: 7
+          if-no-files-found: error

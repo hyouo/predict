@@ -1,0 +1,9 @@
+# v9 secondary diagnostics (declared AFTER primary cross-phase scoring)
+
+The Phase I 3071-profile test is now scored. No predictor or hyperparameter will be retuned using it. These diagnostics are explanatory post-score analyses, not additional confirmatory tests and not a new independent study.
+
+1. For count/context/profile heterogeneous models, hold all selected prior, kernel, blend and amplitude values fixed; replace only diagonal variance ratios by one. Compute Phase I scores to attribute the small gain, never choose a new default from these counterfactuals.
+2. For the three exact cell identities shared by Phase I and the historical Phase II held-target cohort, compare predictions using their Phase I versus Phase II A baselines with the SAME frozen source model. Evaluate on all declared Phase I profiles for those identities; report full and centered errors. This is not an equal-target-control-count comparison. For common observed compounds, additionally compare predicted and measured phase-to-phase response changes to zero change. Do not reinterpret a sample-period contrast as randomized biological causation.
+3. Audit exact full978-gene measured-vector duplicates against the actual Phase II source treatment/control records, with gene order verified. A physical-ID nonoverlap is already established; vector duplicates, if any, will be disclosed and will not silently change the primary cohort.
+
+Preserve every diagnostic, including adverse results. No model fitting, target-guided selection, target-specific amplitude correction or new claim of canonical published-method superiority.

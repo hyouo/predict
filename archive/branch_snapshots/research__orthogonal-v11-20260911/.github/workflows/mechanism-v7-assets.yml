@@ -1,0 +1,43 @@
+name: Mechanism v7 public annotation acquisition
+on:
+  push:
+    branches: [research/mechanism-transfer-v7-20260909]
+    paths: [.github/workflows/mechanism-v7-assets.yml]
+permissions:
+  contents: read
+jobs:
+  annotations:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - name: Retrieve dated public annotations with hard size limits
+        run: |
+          mkdir -p annotations
+          python3 - <<'PY'
+          import pathlib, urllib.request, hashlib, json, datetime
+          out=pathlib.Path('annotations'); records=[]
+          for filename in ['repurposing_drugs_20200324.txt','repurposing_samples_20200324.txt']:
+              url='https://s3.amazonaws.com/data.clue.io/repurposing/downloads/'+filename
+              rec={'url':url,'filename':filename,'retrieved_utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'contains_experimental_outcomes':False}
+              try:
+                  with urllib.request.urlopen(url,timeout=40) as r:
+                      raw=r.read(12000001)
+                  if len(raw)>12000000: raise ValueError('annotation size cap exceeded')
+                  text=raw.decode('utf-8')
+                  if 'pert_iname' not in text: raise ValueError('not expected tabular annotation')
+                  (out/filename).write_bytes(raw)
+                  rec.update(status='success',bytes=len(raw),sha256=hashlib.sha256(raw).hexdigest(),header=text[:800])
+              except Exception as exc:
+                  rec.update(status='failed',error=str(exc))
+              records.append(rec);print(json.dumps(rec),flush=True)
+          (out/'acquisition.json').write_text(json.dumps(records,indent=2))
+          if not all(r['status']=='success' for r in records):raise RuntimeError('annotation acquisition incomplete')
+          PY
+      - name: Store public metadata and failure record
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: mechanism-v7-annotations-${{ github.run_id }}
+          path: annotations/
+          retention-days: 14
+          if-no-files-found: error

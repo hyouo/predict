@@ -1,0 +1,13 @@
+# Source-metric extension, after initial validation and before v6 test scoring
+
+The first 640 validation configurations selected zero pathway mixture in the real and randomized aggregate/local families. A self-gene mixture of 0.25 improved validation MSE. These are validation observations only; v6 held-target outcomes have not been extracted or scored. This extension is adaptive development, not part of the initial primary hypothesis.
+
+1. Add a self-gene negative control: use one fixed permutation of baseline-gene columns for the gene-local rank-one term while leaving the full-baseline term and all target labels unchanged. Seed 2026090802. Give it the same penalty, mixture and output-shrinkage grid as self-gene.
+
+2. Fit a task-similarity metric using permitted source contexts only. Feature families: standardized full baseline, real Reactome pathway features, and identical-capacity degree-preserving randomized pathway features. Learn nonnegative normalized feature weights with a KL-to-uniform penalty of 0.1, Adam learning rate 0.05 for 120 steps, fixed kernel ridge of 1.0. No target treatment labels or target identities enter this fit. Initialize at uniform weights and retain the complete source loss curve.
+
+Training objective: analytic leave-whole-source-context-out predictions for each compound's available support, evaluated on the other plate-disjoint source replicate and symmetrized. Store source-only Gram sufficient statistics grouped by missing-data support; no missing profiles become zeros. Compare the Gram loss and gradients against explicit leave-context-out prediction on synthetic fixtures. Physical plate disjointness does not imply normalization or biological independence, so no unbiased biological risk claim is made.
+
+Outer selection remains on the six validation contexts: penalty {0.01,0.1,1,10,100}, full/learned-kernel mixture {0,0.25,0.5,0.75,1}, common output strengths {0.25,0.5,0.75,1}. Refit the chosen feature metric on the 24 permitted contexts at the same fixed training budget, freeze all final predictions, and report MSE/interaction-selected rules separately. Compare learned real pathways against the learned randomized prior and a learned full-gene metric; improvements shared with these controls are not credited to biological annotation.
+
+Keep original families and adverse validation results. Freeze the original and extended final predictions together before scoring. Repeat the previous tissue-label source-exclusion stress without retuning on held targets. No scientific SOTA or publication claim is warranted without actual matched modern-method and independent-data validation.

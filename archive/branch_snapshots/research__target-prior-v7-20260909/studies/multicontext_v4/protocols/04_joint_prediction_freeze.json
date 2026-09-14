@@ -1,0 +1,19 @@
+{
+  "status": "predictions_frozen_before_held_test_scoring",
+  "source_h5ad_sha256": "34d198df9eddac5b535a0408794caaf41073fa014c74429d1050e483576fb581",
+  "metadata_plan_sha256": "40afb082580e8ffc4eeccf2d0897b8b4569b5fa5648a0775a8c446956afe1698",
+  "original_11_prediction_archive_sha256": "69e66f49ecfa875b81c9e3eb76efa033e3a26aa3bd31c63c4ee3cab8fa0476d6",
+  "additional_2_prediction_archive_sha256": "dd19c61f11271bb82a0aa5270c320e112fd731ae05b67e69df49aa84125b5723",
+  "original_freeze_time_unix": 1788834607.8682108,
+  "comparator_freeze_time_unix": 1788834728.7570415,
+  "test_contexts": ["CVCL_0023", "CVCL_5136", "CVCL_U602", "NPC.CAS9", "MNEU.E", "SKL.C"],
+  "target_treatment_calibration": 0,
+  "fitting_contexts_after_validation_selection": 24,
+  "n_landmark_genes": 978,
+  "candidate_selection": "six validation contexts, no held test treatment or test scoring-reference values",
+  "interaction_centered_mse_selection": {"penalty": 0.1, "strength": 0.5},
+  "interaction_centered_contrast_selection": {"penalty": 0.01, "strength": 0.5},
+  "full_direct_ridge_selection": {"penalty": 1.0},
+  "full_residual_ridge_selection": {"penalty": 1.0},
+  "scientific_boundary": "public L1000 Level-3 conditional assay evaluation, not single-cell RNA-seq, not novel-drug or lineage-family holdout, no SOTA result yet"
+}

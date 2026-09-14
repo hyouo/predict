@@ -1,0 +1,23 @@
+{
+  "source_archive": "perturbation_research_v0_7.zip",
+  "archive_sha256": "cb702dabab55317268467f8a1e67e6d252d6ecb3566ff1b8fa36082a5fb03682",
+  "archive_bytes": 26687094,
+  "scope": "Core model modules, all 37 original tests, and two primary experiment entrypoints. Full historical arrays/other runners remain in original archive; not claimed to be all imported.",
+  "files": {
+    "src/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "src/aggregation.py": "5144b7ccf8e1e2a89644abc9db6688d59d2f752c17f0090f06b4651981e92a83",
+    "src/contrast_design.py": "b790f792caf587c7062d11b269ff2e9cdda38844f4a0b4e60edefb1fc2dabc3c",
+    "src/covariance.py": "6c65785e54f817073a49eb61ef61b4a80ef74e446ad4029961865cdf5182dcd6",
+    "src/data.py": "147556d5b93de92e30935e04b47a1704503cb2207634cbecb12309bebddcf4dd",
+    "src/deployment_risk.py": "40b2f09e5f62f45587f536c3330cdbcdaa1bf6f6fade92bbd3f203a49c094b5b",
+    "src/kriging.py": "cefcbc965e3e996467f6ccbabe2df126205965ac713cf96e08414ca1f4a2b75a",
+    "src/streaming.py": "f6bf4f2b141d7f638b1c78b2fbbf1eb26fcf42f35ed88815af2d91ae9559a3fa",
+    "src/weighted_risk.py": "964966baf80298f805c1e1d11aa45adcde7512e70adc4809ffcf2ff58eb7a43b",
+    "tests/test_practical_design.py": "6a51680e2db4cb49b9e7c8ced51cf5b5bd53c5cd500cd1be0707424a5b69a6d0",
+    "tests/test_statistics.py": "5265568141e750f075df9bd1c3bf445ea0e6db93032d29ee2bb744d13cb1750b",
+    "tests/test_streaming.py": "668427057934327f6ce8a54cafcde31fe1ecbc96409cdb8173a69797e818c874",
+    "tests/test_vector_actions.py": "3357530374b70ba393202d47973d5557a9ed22efa80d808b448963f49f113190",
+    "run_covariance.py": "9fb6095e12908cb23e09623f580e05b2c7f65554803e9b674a2637bd94c5cc1e",
+    "run_sentinel_probe.py": "a276e556584163d0899c3235df616a030bc730b22dcda2a11df0e01b9a60b50b"
+  }
+}

@@ -1,0 +1,85 @@
+name: Operator v3 LINCS acquisition
+on:
+  push:
+    branches: [research/operator-v3-multicontext-20260908]
+    paths: [.github/workflows/operator-v3-l1000.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  acquire:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Install HDF5 readers
+        run: python3 -m pip install numpy==2.3.5 h5py==3.15.1 pandas==2.2.3 scipy==1.17.0
+      - name: Acquire pinned public file and extract metadata-defined subset
+        run: |
+          python3 - <<'PY'
+          import json,hashlib,urllib.request,pathlib,datetime
+          import h5py,numpy as np,pandas as pd
+          from scipy import sparse
+          out=pathlib.Path('l1000_v3');out.mkdir()
+          rev='6c54c8eb0321cceff4f888c54e199077d055e20b'
+          path='l1000_phase2/l1000_phase2_level3_deg_ready_landmark_processed.h5ad'
+          url='https://huggingface.co/datasets/theislab/chem-perturbridge/resolve/'+rev+'/'+path
+          expected='34d198df9eddac5b535a0408794caaf41073fa014c74429d1050e483576fb581'
+          tmp=pathlib.Path('pinned_l1000.h5ad');h=hashlib.sha256();n=0
+          with urllib.request.urlopen(url,timeout=90) as r,tmp.open('wb') as f:
+              while True:
+                  b=r.read(4*1024*1024)
+                  if not b:break
+                  n+=len(b)
+                  if n>710000000:raise RuntimeError('acquisition cap exceeded')
+                  f.write(b);h.update(b)
+          if n!=707799618 or h.hexdigest()!=expected:raise RuntimeError('upstream checksum mismatch')
+          def col(x):
+              if isinstance(x,h5py.Dataset):
+                  return x.asstr()[:] if h5py.check_string_dtype(x.dtype) else x[:]
+              if 'categories' in x and 'codes' in x:
+                  cats=col(x['categories']);ix=x['codes'][:]
+                  return np.array([cats[i] if i>=0 else None for i in ix])
+              if 'values' in x and 'mask' in x:
+                  val=col(x['values']).astype(object);val[x['mask'][:]]=None;return val
+              raise ValueError('unsupported metadata: '+x.name)
+          with h5py.File(tmp,'r') as f:
+              obs=pd.DataFrame({k:col(v) for k,v in f['obs'].items()})
+              var=pd.DataFrame({k:col(v) for k,v in f['var'].items()})
+              obs.to_csv(out/'all_metadata.csv.gz',index=False)
+              var.to_csv(out/'genes.csv',index=False)
+              control=obs['is_control'].astype(str).str.lower().isin(['true','1'])
+              time=pd.to_numeric(obs['pert_time_h'],errors='coerce')
+              dose=pd.to_numeric(obs['pert_dose_uM'],errors='coerce')
+              choose=np.isclose(time,24)&(control|np.isclose(dose,10))
+              rows=np.flatnonzero(choose)
+              if len(rows)<1:raise RuntimeError('no selected observations')
+              x=f['X'];rawshape=list(x.shape) if isinstance(x,h5py.Dataset) else list(x.attrs['shape'])
+              if isinstance(x,h5py.Dataset):
+                  pieces=[]
+                  for lo in range(0,len(obs),1024):
+                      block=x[lo:min(lo+1024,len(obs))];mask=choose[lo:lo+len(block)].to_numpy() if hasattr(choose,'to_numpy') else choose[lo:lo+len(block)]
+                      if np.any(mask):pieces.append(block[mask])
+                  values=np.concatenate(pieces)
+              else:
+                  mat=sparse.csr_matrix((x['data'][:],x['indices'][:],x['indptr'][:]),shape=rawshape)
+                  values=mat[rows].toarray()
+              sub=obs.iloc[rows].copy();sub.insert(0,'upstream_row',rows)
+              sub.to_csv(out/'observations.csv.gz',index=False)
+              np.savez_compressed(out/'expression.npz',X=values,upstream_rows=rows)
+              info={'source_url':url,'upstream_bytes':n,'upstream_sha256':h.hexdigest(),'upstream_shape':rawshape,'selected_shape':list(values.shape),'selection':'24h and (control or 10uM), no expression-based selection','matrix_dtype':str(values.dtype),'obs_columns':list(obs.columns),'var_columns':list(var.columns),'control_count':int(control[choose].sum()),'context_counts':sub['cell_type'].value_counts().to_dict(),'perturbagen_count':int(sub.loc[~control[choose].to_numpy(),'perturbagen'].nunique()),'uns_keys':list(f['uns'].keys()),'layers':list(f['layers'].keys()),'trained':False,'utc':datetime.datetime.now(datetime.timezone.utc).isoformat()}
+              for key in f['uns']:
+                  obj=f['uns'][key]
+                  if isinstance(obj,h5py.Dataset) and obj.size<30:
+                      try:info['uns_'+key]=obj.asstr()[()].tolist() if h5py.check_string_dtype(obj.dtype) else obj[()].tolist()
+                      except Exception:info['uns_'+key]=str(obj[()])
+          info['files']={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in out.iterdir()}
+          (out/'acquisition.json').write_text(json.dumps(info,indent=2,default=str))
+          print(json.dumps(info,indent=2,default=str))
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: operator-v3-l1000-fixed-subset
+          path: l1000_v3/
+          retention-days: 14
+          compression-level: 1
+          if-no-files-found: error

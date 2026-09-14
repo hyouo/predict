@@ -1,0 +1,13 @@
+# Functional-state v10 continuation
+
+This continues the strategic review, not a replacement for v7/v9. Literature audit found direct prior art (Niepel 2013/2014, TCRP 2021, BATCHIE 2025, ScreenShot 2026 preprint and functional apoptosis profiling). A functional-probe predictor by itself is not a novelty claim.
+
+## Newly acquired assay
+Pinned HMS author source a94a832cc2d9f963c4597eafd6593cd332bfe433: data/scatterplots/data_Basal levels_raw.tsv and data_HTM (all GF), mean_foldchange.tsv. After exact documented display-ID normalization, 38 aligned cell lines, 46 basal protein features, 15 ligands, 4 microscopy readouts, high-dose time-averaged supplied fold-change values. This is a historical author-visualization subset, not raw RNA, not clinical data, and not complete independent biological repeats. Prepared NPZ SHA256: 7aa12126082bbad991af90ac4354a3f6981bac5ac3253ff810a3fad632050756. Original workbook and metadata are preserved; basal workbook header/values conflict prevents automatic reuse of that sheet's stated scale. The small lapatinib table is not treated as a broad drug benchmark.
+
+## Bounded retrospective feasibility
+Outer leave-one-cell-out and leave-subtype-out. Query ligand families: ErbB(EGF,EPR,BTC,HRG), Insulin/IGF(INS,IGF-1,IGF-2), FGF(FGF1,FGF2), six separate PDGFBB,HGF,SCF,NGF,EFNA1,VEGFF families. No target family enters target probes. Budgets 1,2,4 complete ligand vectors, each with all four readouts. A vector represents a time-averaged assay; it is not one physical well. Three fixed hashed orders (173,307,509) and source-only block A-optimal selection (noise ridge .1 times mean positive source variance). Query-family-specific panels are not a universal panel.
+
+Methods: source mean, basal ridge, four-channel probe mean ridge, all-probe ridge, basal plus mean-probe ridge, basal plus all-probe ridge. Same inner five-fold cell CV, fold-local scaling, positive per-sample ridge grid [.0001,.001,.01,.1,1,10,100], free intercept. Query-family source loss chooses parameters. Target model APIs receive basal and selected probes only. Save all predictions and indices with joint hashes before scoring target query labels. Report MSE/MAE equal-weight over cell/family/policy and all adverse subgroups. No independent-replicate CI or SOTA inference. These conventional models test incremental information, not novel architecture. Existing L1000 exposed tests remain unopened for new fitting in this round; only metadata support was audited.
+
+Any later analysis must be labelled post-primary. Preserve provenance, selection costs, failures and source/matrix hashes. No default replacement, automatic merge, journal submission or paid compute.

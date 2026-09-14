@@ -1,0 +1,71 @@
+name: Validate consolidated research v14
+on:
+  push:
+    branches: [integration/consolidated-v14-20260914]
+    paths: [.github/workflows/research-v14-validate.yml]
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      OPENBLAS_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+    steps:
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.13.5'
+      - name: Clone the public integration branch and verify histories
+        run: |
+          git clone --branch integration/consolidated-v14-20260914 https://github.com/hyouo/predict.git checkout
+          mkdir verification
+          cd checkout
+          python - <<'PY'
+          import subprocess,json,pathlib,hashlib
+          def git(*args):return subprocess.check_output(['git',*args],timeout=60).decode().strip()
+          base='575c325a4dd6f99eb055a305e789932667835b93'
+          records=[]
+          for line in git('ls-tree','HEAD:archive/branch_snapshots').splitlines():
+              meta,name=line.split('\t');mode,kind,tree=meta.split();branch=name.replace('__','/')
+              original=git('rev-parse','origin/'+branch)
+              original_tree=git('rev-parse',original+'^{tree}')
+              if tree!=original_tree:raise RuntimeError('Snapshot mismatch or upstream branch moved: '+branch)
+              subprocess.run(['git','merge-base','--is-ancestor',original,'HEAD'],check=True)
+              records.append({'branch':branch,'commit':original,'tree':tree,'exact_tree':True,'ancestor':True})
+          if len(records)!=29:raise RuntimeError('Unexpected snapshot count')
+          paths=['perturb_predict','src','tests','requirements.txt','requirements-release.txt','pyproject.toml']
+          subprocess.run(['git','diff','--exit-code',base,'HEAD','--',*paths],check=True)
+          pathlib.Path('../verification/branch_validation.json').write_text(json.dumps({'head':git('rev-parse','HEAD'),'stable_code_unchanged':True,'snapshots':records},indent=2))
+          PY
+      - name: Install the recorded numerical environment
+        run: python -m pip install -r checkout/requirements.txt
+      - name: Test stable software and new design core
+        run: |
+          set -o pipefail
+          cd checkout
+          python -m tools.assets --asset auxiliary 2>&1 | tee ../verification/asset.log
+          python -m unittest discover -s tests -v 2>&1 | tee ../verification/stable_tests.log
+          python -m unittest discover -s studies/bridge_design_v14/tests -v 2>&1 | tee ../verification/bridge_tests.log
+          python -m tools.smoke --output runs/v14-integration-smoke 2>&1 | tee ../verification/smoke.log
+      - name: Save exact source and verification
+        if: always()
+        run: |
+          cd checkout
+          git bundle create ../verification/consolidated-remote.bundle --all
+          git bundle verify ../verification/consolidated-remote.bundle
+          git archive HEAD | gzip -n > ../verification/consolidated-source.tar.gz
+          python - <<'PY'
+          import pathlib,hashlib,json
+          r=pathlib.Path('../verification')
+          m={p.name:{'bytes':p.stat().st_size,'sha256':hashlib.sha256(p.read_bytes()).hexdigest()} for p in r.iterdir() if p.is_file()}
+          (r/'files.json').write_text(json.dumps(m,indent=2))
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: consolidated-v14-verification-${{ github.run_id }}
+          path: verification/
+          retention-days: 14
+          if-no-files-found: error

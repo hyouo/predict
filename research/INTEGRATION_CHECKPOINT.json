@@ -1,0 +1,20 @@
+{
+  "date": "2026-09-14",
+  "original_main": "575c325a4dd6f99eb055a305e789932667835b93",
+  "original_non_main_branch_trees": 29,
+  "source_integration_commit": "299adabfd0a6ac67ee971456b5a3b4c4cf7210e3",
+  "original_branch_frontier_merge_parents": 21,
+  "stable_prediction_code_changed": false,
+  "local_restored_stage_archives": 15,
+  "local_files_matching_original_archives": 3366,
+  "syntax_checked_python_files": 377,
+  "syntax_failures": 0,
+  "remote_scope": "all existing branch trees and histories, current route, new bridge core and tests; not all local stage archives",
+  "new_study": "conditional native-link design on inherited v13 empirical margins",
+  "actual_new_biological_pairs": 0,
+  "new_drug_predictors_trained": 0,
+  "primary_eligible_conditions": 389,
+  "inherited_conditions_retained_in_aggregate": 433,
+  "next_gate": "verified bridge provenance and predeclared independent-preparation drug-selectivity pilot",
+  "not_approved": ["new SOTA claim", "Nature readiness", "causal mechanism", "automatic inferred pairing"]
+}

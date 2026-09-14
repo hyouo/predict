@@ -1,0 +1,47 @@
+name: Functional state v10 public data acquisition
+on:
+  push:
+    branches: [research/functional-state-v10-20260910]
+    paths: [.github/workflows/functional-state-v10-assets.yml]
+permissions:
+  contents: read
+jobs:
+  acquire:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Retrieve fixed public sources only
+        run: |
+          mkdir -p public-data
+          python3 - <<'PY'
+          import urllib.request, urllib.parse, pathlib, hashlib, json, datetime
+          root = pathlib.Path('public-data')
+          base = 'https://raw.githubusercontent.com/hmslincs/hmslincs/a94a832cc2d9f963c4597eafd6593cd332bfe433/data/scatterplots/'
+          names = ['README.txt','cell_line_subtype.tsv','data_Basal levels_raw.tsv','data_HTM (GF)_foldchange.tsv','data_HTM (all GF), mean_foldchange.tsv','elisa_basal.tsv','elisa_foldchange.tsv','elisa_meanfoldchange.tsv','lapatinib_gi50.tsv']
+          urls = {name: base + urllib.parse.quote(name) for name in names}
+          urls['niepel_2013_data5_all_transformed.xlsx'] = 'https://lincs.hms.harvard.edu/wordpress/wp-content/uploads/2013/09/niepel_2013_data5_all_transformed.xlsx'
+          urls['niepel_2013_data5_all_transformed_details.txt'] = 'https://lincs.hms.harvard.edu/wordpress/wp-content/uploads/2013/09/niepel_2013_data5_all_transformed_details.txt'
+          urls['heiser_2012_sd02.xlsx'] = 'https://www.pnas.org/content/suppl/2011/10/14/1018854108.DCSupplemental/sd02.xlsx'
+          records = []
+          for name, url in urls.items():
+              rec = {'file':name, 'url':url, 'retrieved_utc':datetime.datetime.now(datetime.timezone.utc).isoformat()}
+              try:
+                  with urllib.request.urlopen(url, timeout=15) as response:
+                      data = response.read(15000001)
+                  if len(data) > 15000000: raise ValueError('Per-file byte cap exceeded')
+                  (root / name).write_bytes(data)
+                  rec.update(status='success', bytes=len(data), sha256=hashlib.sha256(data).hexdigest())
+              except Exception as exc:
+                  rec.update(status='failed', error=str(exc))
+              records.append(rec)
+              print(json.dumps(rec), flush=True)
+          (root/'acquisition.json').write_text(json.dumps(records,indent=2))
+          PY
+      - name: Save small public data and all failures
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: functional-state-v10-public-${{ github.run_id }}
+          path: public-data/
+          retention-days: 14
+          if-no-files-found: error

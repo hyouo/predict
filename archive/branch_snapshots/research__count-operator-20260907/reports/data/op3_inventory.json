@@ -1,0 +1,123 @@
+{
+  "asset": "op3",
+  "source_url": "https://huggingface.co/datasets/theislab/chem-perturbridge/resolve/6c54c8eb0321cceff4f888c54e199077d055e20b/op3/op3_standardized_processed.h5ad?download=true",
+  "bytes": 23700750,
+  "sha256": "8eaf7e63adc68029e88184726b8545bc3836c3ef2a25b9185dc4e8b819537e59",
+  "metadata_only": true,
+  "expression_values_read": false,
+  "approved_for_training": false,
+  "rna_training_performed": false,
+  "structure": {
+    "top_level_keys": [
+      "X",
+      "layers",
+      "obs",
+      "obsm",
+      "obsp",
+      "uns",
+      "var",
+      "varm",
+      "varp"
+    ],
+    "X": {
+      "encoding": "csr_matrix",
+      "shape": [
+        1813,
+        5288
+      ]
+    },
+    "layers": {},
+    "obs_columns": [
+      "assay",
+      "cell_type",
+      "dataset",
+      "development_stage",
+      "disease",
+      "guide",
+      "is_control",
+      "library",
+      "organism",
+      "pert_dose_uM",
+      "pert_time_h",
+      "pert_type",
+      "perturbagen",
+      "perturbation_label",
+      "plate",
+      "psbulk_cells",
+      "psbulk_counts",
+      "pubchem_cid",
+      "sample_id",
+      "self_reported_ethnicity",
+      "sex",
+      "split",
+      "stimulation",
+      "suspension_type",
+      "tissue",
+      "tissue_type",
+      "well"
+    ],
+    "var_columns": [
+      "ensembl_id",
+      "is_merged",
+      "symbol"
+    ],
+    "uns_keys": [],
+    "approved_for_training": false,
+    "warning": "Verify units, normalization, donor/well/replicate identity, controls and splits before training."
+  },
+  "observation_count": 1813,
+  "unique_sample_ids": 1813,
+  "counts": {
+    "cell_type": {
+      "CL_0000084": 458,
+      "CL_0000236": 456,
+      "CL_0000623": 455,
+      "CL_0000763": 444
+    },
+    "is_control": {
+      "False": 1621,
+      "True": 192
+    },
+    "split": {
+      "train": 886,
+      "private_test": 453,
+      "public_test": 282,
+      "control": 192
+    },
+    "plate": {
+      "NeurIPS2023_011": 311,
+      "NeurIPS2023_013": 311,
+      "NeurIPS2023_015": 311,
+      "NeurIPS2023_010": 298,
+      "NeurIPS2023_014": 294,
+      "NeurIPS2023_012": 288
+    },
+    "pert_time_h": {
+      "24.0": 1813
+    },
+    "pert_dose_uM": {
+      "1.0": 1621,
+      "0.0": 192
+    }
+  },
+  "control_perturbagens": [
+    "Dimethyl Sulfoxide"
+  ],
+  "noncontrol_perturbagen_labels": 138,
+  "noncontrol_cell_type_perturbagen_pairs": 545,
+  "unique_plate_well_pairs": 458,
+  "unique_plate_well_cell_type_triples": 1813,
+  "explicit_donor_column_present": false,
+  "all_missing_obs_columns": [
+    "guide",
+    "stimulation"
+  ],
+  "measurement_contract_status": "pending_upstream_preprocessing_and_biological_unit_audit",
+  "caveats": [
+    "Pseudobulk-related metadata are present; do not call these rows individual cells or verified raw counts.",
+    "Distinct perturbagen labels are not an independently verified count of chemically unique entities.",
+    "No donor mapping is inferred from demographics, plate, well or library labels.",
+    "Stored train/public_test/private_test labels must be preserved; metadata inspection is not permission to tune on test outcomes.",
+    "This processed asset is not asserted to contain the full original experiment."
+  ]
+}
