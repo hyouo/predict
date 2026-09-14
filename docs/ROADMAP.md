@@ -1,17 +1,12 @@
-# Next research gates
+# Current research route
 
-## P0 — Quantitative RNA data and measurement contract
+The active plan is [research/ACTIVE_ROUTE_ZH.md](../research/ACTIVE_ROUTE_ZH.md). Prior versions of this file are preserved in the exact branch snapshots.
 
-Acquire the pinned OP3 file and verify SHA256. Inventory matrix layers and units, controls, plate/well/donor/replicate identity, dose/time and missing combinations. Decide whether raw counts or a processed pseudobulk matrix is present; do not guess from the filename. Preserve upstream notices. Deliver a machine-readable data audit and a protocol declaring which observations may be used. A readable HDF5 file is not sufficient to pass this gate.
+Do not restart OP3 acquisition, GSE101406 recovery, old kernel/GLS/quality searches, or retrospective performance reports as new biology. Do not mix few-shot, unseen-target, unseen-drug, early-query-assay and cross-preparation tasks.
 
-## P1 — Lock task, splits and same-information baselines
+1. Integration: preserve source histories, task-specific evidence and executable study archives without changing the stable package.
+2. Verified bridge: establish whether common mother-preparation links exist; use the explicit v14 conditional priority list only to ask which native links to authenticate. Equal record counts and learned alignments are not verification.
+3. Controlled pilot: predeclare one drug-selectivity contrast, reference and probe budget; cross preparations A/B with query drugs excluded from probes. Include static baseline, global sensitivity, per-gene calibration and same-information modern methods.
+4. Independent confirmation: freeze estimator and measurement scheme, assess at independent preparation/context level, and only then test an intervention on a proposed explanatory process.
 
-Separate complete unseen-target baseline-only prediction from few-shot calibration. Use grouped biological units and shared-control accounting. Freeze preprocessing and genes using permitted training/baseline information only. Include zero effect, source mean, offset, ridge/low-rank and the v0.7 residual baseline where its information budget is allowed. Later published baselines require actual same-task execution, not borrowed scores. Primary evaluation includes total and centered error, mean bias, intervention discrimination and worst-context performance. Test permutations/near-neighbor exclusion without selecting methods on the final test.
-
-## P2 — Test whether baseline information substitutes for a probe
-
-Compare permitted target baseline RNA/ATAC information with matched-cost target probes under a separately declared few-shot protocol. The claim is incremental information, not merely more flexible fitting. Joint control/treatment/repeat design requires independently supported noise estimates or explicitly labeled sensitivity analysis. A new case cannot be presented as an independent study by changing random seeds.
-
-## Engineering gate
-
-Modernize the remaining historical runners to fail rather than overwrite a run, support explicit paths and record Git/data/protocol hashes. Each PR carries the precise hypothesis, tests performed, data scope, negative results and unresolved limitations. No automated tuning against the final test and no automatic claim of breakthrough.
+If links do not exist, switch to a genuinely paired resource or a new measurement design rather than manufacture pairing. If gains are only global calibration or fail independent validation, retain a conditional tool and stop expanding architecture. Journal formatting is not a research gate.

@@ -1,23 +1,19 @@
-# Research and software status
+# Integrated research status
 
-Updated 2026-09-07. First usable research software: v0.1.0. Historical research numbering (v0.7/v0.8) remains distinct.
+Updated 2026-09-14. Read research/ACTIVE_ROUTE_ZH.md and research/INTEGRATION_POLICY.md before continuing. This update does not change the stable prediction package or its software version.
 
-## Implemented
+## Integration
 
-Installable `perturb-predict` package and CLI; pinned OP3 prepare; train/save/load/predict; generic aligned-effect bundles and evaluation; frozen prediction records; controlled private/public/control row access; explicit units/context/dose/time; input/hash checks, non-overwriting outputs and failed-run states. Reference model is single-source partial pooling with pooled target controls and no source-spectrum truncation.
+The 29 pre-existing non-main branch trees are preserved exactly under archive/branch_snapshots. All corresponding commits remain reachable through the integration ancestry. No old branch was deleted, no forced update was used, and archived workflows are inert. Some historical branches contain only protocols/evidence, not full code; their exact scope is retained. The consolidated conversation workspace separately restores 15 complete source/small-result archives (3366 unchanged files) with hashes and an isolated research.py entry point. Those full restored archives are not silently claimed to have all been uploaded to Git.
 
-## Actually tested locally
+## Scientific state
 
-51 release tests plus the unchanged repository's 50 tests passed. Installed wheel run outside source checkout produced full B-cell and myeloid models/predictions, repeated the entire public OP3 benchmark, and ran portable inference using only saved models and unlabeled queries. Replayed predictions were bitwise equal. Comparison to the archived v0.8 reference: max absolute differences 1.78e-15 and 8.88e-16. Local dependency download failed because DNS was unavailable; the isolated wheel reused provisioned numerical dependencies. The remote release workflow tests clean dependency installation separately; actual GitHub checks are authoritative.
+Retain v7 shared-response-prior/RBF and simple calibration/quality comparators. Incremental prior/quality gains are retrospective, not independent modern-SOTA superiority. Previously used OP3, Sci-Plex, L1000 and GSE101406 cohorts are exposed. The bounded TranSiGen author-core run is not the strongest canonical paper replication.
 
-## Scientific status
+v12 acquired the original multi-assay matrices and recovered16 reference records by exact cross-release identity. v13 audited native IDs and partial-identification ranges. Those tasks are complete within their declared scope and must not be restarted. Verified culture/aliquot links remain absent; condition-mean analysis can proceed under its own definition but cannot validate same-preparation functional state.
 
-OP3 units are conditional pseudobulk counts with the declared log-CPM effect, not individual cells or competition significance statistics. Release uses 11 B-cell and 10 myeloid calibration compounds and 49/47 public query pairs, not the alternative v0.8 larger-label track. Mean MSE 0.1980665 versus source-copy 0.2197485; drug retrieval 0.438124 versus 0.438993. These are already-used public development data, not new independent validation or SOTA evidence.
+## Active next gate
 
-Explicit donor identity is unavailable; upstream gene-panel selection and shared source/target wells remain limitations. Strict end-to-end unseen-target and new-drug scientific approval remains withheld. No ATAC or modern-SOTA same-task comparison is claimed. No calibrated biological confidence intervals.
+Independent-preparation, query-excluded functional information beyond baseline and global sensitivity. v14's new bridge module designs which authenticated metadata links could reduce an empirical ambiguity interval, under an unverified one-to-one correspondence assumption. It creates no true pairing and no new biological observation. Endpoint sensitivity changes the priority list substantially; it is not an accuracy gain.
 
-## Next research gate
-
-Freeze an independent dataset/experiment-unit protocol and compare this stable release baseline before adding more architecture. Separate prediction-error reduction, drug-specific response discrimination and incremental baseline-information claims. Issues #2/#3 remain scientific tracking gates, not reasons to prevent clearly labeled conditional research use.
-
-Original onboarding README/STATUS remain in docs/history/*_before_usable.md. No unattended research service or paid compute is enabled.
+Require a custodian-certified bridge or an independent paired resource before claiming functional-state recovery. Freeze tasks and costs before new confirmation; preserve same-information strong comparators. No new default model, Nature readiness, causal mechanism or population confidence statement is approved. No paid compute, email sending, automatic scientific release or unattended research.
