@@ -6,6 +6,8 @@ import hashlib
 import json
 from pathlib import Path
 import platform
+import os
+import tempfile
 import zipfile
 import numpy as np
 
@@ -19,9 +21,21 @@ def digest(path):
 
 
 def json_write(path, value):
-    with Path(path).open('x', encoding='utf-8') as f:
-        json.dump(value, f, ensure_ascii=False, indent=2, allow_nan=False)
-        f.write('\n')
+    """Publish complete JSON exclusively; serialization/I/O errors leave no partial file."""
+    text = json.dumps(value, ensure_ascii=False, indent=2, allow_nan=False) + '\n'
+    destination = Path(path)
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', delete=False,
+                                         dir=destination.parent, prefix='.json-', suffix='.tmp') as f:
+            temporary = Path(f.name)
+            f.write(text)
+            f.flush()
+            os.fsync(f.fileno())
+        os.link(temporary, destination)  # Atomic publication, never overwrite an existing result.
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
 
 
 def provenance():
@@ -38,12 +52,11 @@ def run_directory(path):
     p.mkdir(parents=True, exist_ok=False)
     try:
         yield p
+        json_write(p / 'COMPLETE.json', {'status': 'complete', **provenance()})
     except Exception as exc:
         json_write(p / 'FAILED.json', {'status': 'failed', 'error_type': type(exc).__name__,
                                      'error': str(exc), **provenance()})
         raise
-    else:
-        json_write(p / 'COMPLETE.json', {'status': 'complete', **provenance()})
 
 
 def identifiers(value, name):
