@@ -30,6 +30,10 @@ jobs:
         run: python -m tools.assets --asset auxiliary
       - name: Run unit and mathematical checks
         run: python -m unittest discover -s tests -v
+      - name: Test exclusive output and run-finalization contracts
+        run: python -m unittest discover -s tests_release -p 'test_io_atomic.py' -v
+      - name: Test integrated bridge-design invariants (synthetic only)
+        run: python -m unittest discover -s studies/bridge_design_v14/tests -v
       - name: Measured-data integration check (not biological validation)
         run: python -m tools.smoke --output runs/ci-smoke
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
