@@ -63,7 +63,7 @@ def materialize(url: str, destination: Path, expected_sha256: str,
             output.flush()
             os.fsync(output.fileno())
         result = verify_file(temporary, expected_sha256, max_bytes)
-        os.replace(temporary, destination)
+        os.link(temporary, destination)  # Never replace a cache created during transfer.
         return {**result, 'cached': False, 'retrieval': 'local_verified_copy' if source else 'https'}
     finally:
         if temporary is not None:

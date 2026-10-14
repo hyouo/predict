@@ -1,0 +1,218 @@
+{
+  "schema_version": 1,
+  "recorded_date": "2026-10-14",
+  "canonical_branch": "main",
+  "previous_main": "32d234b22e5f07f8ed40ca3e8eb316b5ee16ba4a",
+  "preservation": "Every listed commit must remain reachable through main ancestry before branch removal. Historical trees are not active software versions.",
+  "branches": [
+    {
+      "branch": "fix/public-repair-20260930",
+      "commit": "c31ef747d4019dfd09617584a0a75427b7482beb",
+      "tree": "88fcabe74b3fa4b5ab25e1b3d501f0b2db7eddd0"
+    },
+    {
+      "branch": "integration/consolidated-v14-20260914",
+      "commit": "2a19050c71eaa778cd00f8ed890538d8c18470e7",
+      "tree": "0a5aa36e974e781166c6f37e058893a5bea002ed"
+    },
+    {
+      "branch": "integration/research-v14-20260914",
+      "commit": "f9f26f34ab5cdc193bdf88a299f3a1699564f43d",
+      "tree": "f6aa5b75f062c3fb69d4c001e08ebadb2e87463d"
+    },
+    {
+      "branch": "main",
+      "commit": "32d234b22e5f07f8ed40ca3e8eb316b5ee16ba4a",
+      "tree": "0a5aa36e974e781166c6f37e058893a5bea002ed"
+    },
+    {
+      "branch": "maintenance/public-audit-20260930",
+      "commit": "8ddaf5f7940b1ccf454b8ebb30d32ac92c873fde",
+      "tree": "612488bcbd852fa3f9e660942d0dbba74180bf66"
+    },
+    {
+      "branch": "release/first-usable-v0.9",
+      "commit": "a193fc9aa5bc014c63738fb75b7e0d278d44fdd0",
+      "tree": "83c4540910bc9f5a6e0e7a33e3e79c04b7e31342",
+      "snapshot": "archive/branch_snapshots/release__first-usable-v0.9"
+    },
+    {
+      "branch": "release/usable-v0.1.0",
+      "commit": "4b7ed58c9dad671af523c5ed13180cb9ff9a7787",
+      "tree": "8688433a464d85f33521c4f3dd0431736496a24b",
+      "snapshot": "archive/branch_snapshots/release__usable-v0.1.0"
+    },
+    {
+      "branch": "release/usable-v0.1.0-score-guards",
+      "commit": "2c1250587c7b211419c6bf3a153b8be889524b5d",
+      "tree": "c699062bf2d617a07264eacaf52083595330391b",
+      "snapshot": "archive/branch_snapshots/release__usable-v0.1.0-score-guards"
+    },
+    {
+      "branch": "research/bootstrap-v0.7",
+      "commit": "b8e80279fc021ec2810196e6772ca50a0762a475",
+      "tree": "83c4540910bc9f5a6e0e7a33e3e79c04b7e31342",
+      "snapshot": "archive/branch_snapshots/research__bootstrap-v0.7"
+    },
+    {
+      "branch": "research/count-operator-20260907",
+      "commit": "9306f56b5dfc70b73e49ceaa68c6a4cc52ed079d",
+      "tree": "7bb336f68f1b2ca9aba82074c294ea6e13c82acd",
+      "snapshot": "archive/branch_snapshots/research__count-operator-20260907"
+    },
+    {
+      "branch": "research/count-operator-v2-20260907",
+      "commit": "f680454728bc8ddd8debce936cd9e92f3134af62",
+      "tree": "c94ef8e133d8a564baa3fcb8015781bf89dcedfc",
+      "snapshot": "archive/branch_snapshots/research__count-operator-v2-20260907"
+    },
+    {
+      "branch": "research/crossassay-v12-20260911",
+      "commit": "8875bd6111fc0108fbbc86d46d180c83c17b42ba",
+      "tree": "a31bd3dd4c90c6f2cd51fdb9c9a620890d96e421",
+      "snapshot": "archive/branch_snapshots/research__crossassay-v12-20260911"
+    },
+    {
+      "branch": "research/crossreplicate-v15-20260914",
+      "commit": "817d269a088ef9bdae0e773e875d1fac5919356f",
+      "tree": "bb1347512347da4befcfb86b8ab76738afee9cf3"
+    },
+    {
+      "branch": "research/functional-state-v10-20260910",
+      "commit": "a71ed71e691f2556f02030d36e34b5d3a550a8e9",
+      "tree": "636dfd5433e6b0c0a710a9b740e42000826b062c",
+      "snapshot": "archive/branch_snapshots/research__functional-state-v10-20260910"
+    },
+    {
+      "branch": "research/interaction-v5-20260908",
+      "commit": "51fcc78d732e74c77e95e62d6f604bf692fee3fd",
+      "tree": "720faff13f25468905eb4db1c80fd79e107a9c80",
+      "snapshot": "archive/branch_snapshots/research__interaction-v5-20260908"
+    },
+    {
+      "branch": "research/joint-prior-v8-20260910",
+      "commit": "b7d816ddfb33bcd00e1e29859bf5ee0f37a7f071",
+      "tree": "5197b24618f299bdb3bda3d6e83068aee4264f60",
+      "snapshot": "archive/branch_snapshots/research__joint-prior-v8-20260910"
+    },
+    {
+      "branch": "research/mechanism-transfer-v7-20260909",
+      "commit": "26767301d03630e322588019ca745e34ad6ca0c6",
+      "tree": "74035f0bff56c2fbe85501b0b7aaa80fdf927a30",
+      "snapshot": "archive/branch_snapshots/research__mechanism-transfer-v7-20260909"
+    },
+    {
+      "branch": "research/multicontext-v4-20260908",
+      "commit": "3dc6849385452ef1baf2ef79b37ad2912466f0ea",
+      "tree": "417b849595c6154f4b07663c3163741964a6cc31",
+      "snapshot": "archive/branch_snapshots/research__multicontext-v4-20260908"
+    },
+    {
+      "branch": "research/native-paired-v16-20260914",
+      "commit": "06661d2da074c6048c30f70ff215a991a7c240f2",
+      "tree": "31972fa599815e92568409b82363d2924addc789"
+    },
+    {
+      "branch": "research/op3-control-separated-v08",
+      "commit": "c0fb37c388d2b6ef910ec4ee412d5cc6a6998e66",
+      "tree": "74a24ce3cf29f74d49bcba5027e4186dd3ff2ecd",
+      "snapshot": "archive/branch_snapshots/research__op3-control-separated-v08"
+    },
+    {
+      "branch": "research/op3-quantitative-v0.8",
+      "commit": "e466ca9935ac601b33fe01060b451dbcbdbb274c",
+      "tree": "dafa46b8466b809add06f86f71c686a3e8e6c71b",
+      "snapshot": "archive/branch_snapshots/research__op3-quantitative-v0.8"
+    },
+    {
+      "branch": "research/operator-v3-multicontext-20260908",
+      "commit": "0a0fcf356a70a983d94fe10369784f06e3ee6100",
+      "tree": "009ffb14ef848bdd720e8c2d5f424211e746e37d",
+      "snapshot": "archive/branch_snapshots/research__operator-v3-multicontext-20260908"
+    },
+    {
+      "branch": "research/orthogonal-v11-20260911",
+      "commit": "f06e04dd99fa292ba9f0b99ec0653922493d3797",
+      "tree": "0d37d298a0494b6a8e7bd4cb82d9b4de55137ca2",
+      "snapshot": "archive/branch_snapshots/research__orthogonal-v11-20260911"
+    },
+    {
+      "branch": "research/p100-v11-20260911",
+      "commit": "9d0edf41eab872980be789ffb8e52aba87f09d8a",
+      "tree": "77b28ca0da912230111e35d897e65b031531e7cb",
+      "snapshot": "archive/branch_snapshots/research__p100-v11-20260911"
+    },
+    {
+      "branch": "research/paper-reanalysis-157-20260907",
+      "commit": "27a790aeb2e4fd0b2eb535be969670f885d34416",
+      "tree": "d317136c39eceec134543b1bc60531f3d662fba0",
+      "snapshot": "archive/branch_snapshots/research__paper-reanalysis-157-20260907"
+    },
+    {
+      "branch": "research/paper-validation-20260907",
+      "commit": "c2dd42122035f31050499020e09e70cc2ca6c9dd",
+      "tree": "3509d1a683d283ae255cde01c5a20ba7859fafb7",
+      "snapshot": "archive/branch_snapshots/research__paper-validation-20260907"
+    },
+    {
+      "branch": "research/pathway-support-v6-20260908",
+      "commit": "bb9530e1bc7ddb6e1047881c383d895199e7c259",
+      "tree": "c1e63bcaaf6815cc102e43493291f995f29efed3",
+      "snapshot": "archive/branch_snapshots/research__pathway-support-v6-20260908"
+    },
+    {
+      "branch": "research/pathway-transfer-v6-20260908",
+      "commit": "c9e4dfb3125d3226cc044b84422a05fc1334c55f",
+      "tree": "4beb32c0495c88352d2948c881d5b1f85ea125d9",
+      "snapshot": "archive/branch_snapshots/research__pathway-transfer-v6-20260908"
+    },
+    {
+      "branch": "research/provenance-v13-20260912",
+      "commit": "8875bd6111fc0108fbbc86d46d180c83c17b42ba",
+      "tree": "a31bd3dd4c90c6f2cd51fdb9c9a620890d96e421",
+      "snapshot": "archive/branch_snapshots/research__provenance-v13-20260912"
+    },
+    {
+      "branch": "research/reference-sparsity-186-20260907",
+      "commit": "e9d712213857a7f7842667d252528ab8cfe2f484",
+      "tree": "f06fab1c170cc8e0449b12a7110db2d8ad6307f5",
+      "snapshot": "archive/branch_snapshots/research__reference-sparsity-186-20260907"
+    },
+    {
+      "branch": "research/reliability-v9-20260910",
+      "commit": "bfc8a5f3533c73c9248cf2fe8347c72f63ca5cc6",
+      "tree": "5d3d138fd32dd2f98d7141b4eea1f3f5f7b08661",
+      "snapshot": "archive/branch_snapshots/research__reliability-v9-20260910"
+    },
+    {
+      "branch": "research/rna-v0.8",
+      "commit": "0944d1b1744bf412002e5dfe8bd044cf9695cc3d",
+      "tree": "83d36509272b7342ef813327fe049f03d42e7243",
+      "snapshot": "archive/branch_snapshots/research__rna-v0.8"
+    },
+    {
+      "branch": "research/structural-reset-20260907",
+      "commit": "c72ea51a48339fcb32f5e203dfcf0f06979e1ab7",
+      "tree": "d2c4a130037f6fcf3818550b26c7ef18a339d117",
+      "snapshot": "archive/branch_snapshots/research__structural-reset-20260907"
+    },
+    {
+      "branch": "research/target-prior-v7-20260909",
+      "commit": "f7798f396ff968a5bf326042e62236da6992ed6d",
+      "tree": "1bbbf42be6acd9ba03204ebbd161fbd3dd7d5702",
+      "snapshot": "archive/branch_snapshots/research__target-prior-v7-20260909"
+    },
+    {
+      "branch": "research/transfer-v8-20260910",
+      "commit": "9433c4825bce34120c000356870bb0ce161cc87c",
+      "tree": "b2ea5edb35ec8eb277c2e381838291949c85b2a4",
+      "snapshot": "archive/branch_snapshots/research__transfer-v8-20260910"
+    },
+    {
+      "branch": "research/transport-v3-20260908",
+      "commit": "d8147a5852b81db50cb2395b4c946ed5886b1e47",
+      "tree": "4fd203860478f564ba20270d1bb7e1739977cdcf",
+      "snapshot": "archive/branch_snapshots/research__transport-v3-20260908"
+    }
+  ]
+}

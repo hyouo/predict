@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 使用与安装文档
+    url: https://github.com/hyouo/predict/blob/main/docs/releases/QUICKSTART_ZH.md
+    about: 先阅读离线演示、自有数据入口与常见问题。
+  - name: 安全报告说明
+    url: https://github.com/hyouo/predict/blob/main/SECURITY.md
+    about: 安全漏洞请按此说明报告，不在公开 issue 中披露敏感细节。

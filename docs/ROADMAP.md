@@ -1,12 +1,10 @@
-# Current research route
+# 项目维护路线
 
-The active plan is [research/ACTIVE_ROUTE_ZH.md](../research/ACTIVE_ROUTE_ZH.md). Prior versions of this file are preserved in the exact branch snapshots.
+唯一产品入口是 `main` 上的 `perturb_predict/`。先维持可安装、可独立预测、可诊断失败、可复现的软件基线；修复通过短期 PR 合入，合入后清理分支。
 
-Do not restart OP3 acquisition, GSE101406 recovery, old kernel/GLS/quality searches, or retrospective performance reports as new biology. Do not mix few-shot, unseen-target, unseen-drug, early-query-assay and cross-preparation tasks.
+1. 正常使用：维护离线示例、自有数据合同与分步 CLI，支持安装后的完整流水线。
+2. 软件质量：持续检查 Python 兼容性、发行包、数值回归、文件大小/格式边界及不覆盖已有结果的约束。
+3. 贡献入口：用可复现 Issue 和 PR 讨论明确问题；不以新增永久版本分支代替修复。
+4. 研究关卡：按 [现有研究路线](../research/ACTIVE_ROUTE_ZH.md) 取得可认证的独立制备证据，冻结任务、预算和同信息对照后才推进科学结论。
 
-1. Integration: preserve source histories, task-specific evidence and executable study archives without changing the stable package.
-2. Verified bridge: establish whether common mother-preparation links exist; use the explicit v14 conditional priority list only to ask which native links to authenticate. Equal record counts and learned alignments are not verification.
-3. Controlled pilot: predeclare one drug-selectivity contrast, reference and probe budget; cross preparations A/B with query drugs excluded from probes. Include static baseline, global sensitivity, per-gene calibration and same-information modern methods.
-4. Independent confirmation: freeze estimator and measurement scheme, assess at independent preparation/context level, and only then test an intervention on a proposed explanatory process.
-
-If links do not exist, switch to a genuinely paired resource or a new measurement design rather than manufacture pairing. If gains are only global calibration or fail independent validation, retain a conditional tool and stop expanding architecture. Journal formatting is not a research gate.
+不重启已完成的 OP3 获取、GSE101406 恢复、旧核/GLS/质量搜索；不将重跑公开数据计为新生物学验证。未经证据验证的配对不得进入默认模型。旧协议、失败与记录保留在 [archive](../archive/README.md)。

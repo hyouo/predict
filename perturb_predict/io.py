@@ -4,11 +4,13 @@ from contextlib import contextmanager
 from datetime import datetime, timezone
 import hashlib
 import json
+import math
 from pathlib import Path
 import platform
 import os
 import tempfile
 import zipfile
+import zlib
 import numpy as np
 
 MAX_BYTES = 512 * 1024**2
@@ -20,22 +22,29 @@ def digest(path):
         return hashlib.file_digest(f, 'sha256').hexdigest()
 
 
-def json_write(path, value):
-    """Publish complete JSON exclusively; serialization/I/O errors leave no partial file."""
-    text = json.dumps(value, ensure_ascii=False, indent=2, allow_nan=False) + '\n'
+@contextmanager
+def atomic_output(path, *, prefix='.output-'):
+    """Write in the destination directory, then publish once without replacing it."""
     destination = Path(path)
     temporary = None
     try:
-        with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', delete=False,
-                                         dir=destination.parent, prefix='.json-', suffix='.tmp') as f:
+        with tempfile.NamedTemporaryFile(mode='w+b', delete=False,
+                                         dir=destination.parent, prefix=prefix, suffix='.tmp') as f:
             temporary = Path(f.name)
-            f.write(text)
+            yield f
             f.flush()
             os.fsync(f.fileno())
         os.link(temporary, destination)  # Atomic publication, never overwrite an existing result.
     finally:
         if temporary is not None:
             temporary.unlink(missing_ok=True)
+
+
+def json_write(path, value):
+    """Publish complete JSON exclusively; serialization/I/O errors leave no partial file."""
+    text = json.dumps(value, ensure_ascii=False, indent=2, allow_nan=False) + '\n'
+    with atomic_output(path, prefix='.json-') as f:
+        f.write(text.encode('utf-8'))
 
 
 def provenance():
@@ -53,9 +62,13 @@ def run_directory(path):
     try:
         yield p
         json_write(p / 'COMPLETE.json', {'status': 'complete', **provenance()})
-    except Exception as exc:
-        json_write(p / 'FAILED.json', {'status': 'failed', 'error_type': type(exc).__name__,
-                                     'error': str(exc), **provenance()})
+    except (Exception, KeyboardInterrupt) as exc:
+        try:
+            json_write(p / 'FAILED.json', {'status': 'failed', 'error_type': type(exc).__name__,
+                                         'error': str(exc), **provenance()})
+        except Exception as marker_error:
+            # Preserve the operation's cause even when the disk cannot store its marker.
+            exc.add_note(f'Could not write FAILED.json: {marker_error}')
         raise
 
 
@@ -82,38 +95,82 @@ def matrix(value, name):
 
 
 def save_archive(path, metadata, **arrays):
-    """Exclusive file creation; object arrays/pickle are never written."""
+    """Atomically publish a bounded archive; object arrays/pickle are never written."""
+    arrays = {key: np.asarray(value) for key, value in arrays.items()}
     for key, value in arrays.items():
-        if key == 'metadata_json' or np.asarray(value).dtype.kind == 'O':
-            raise ValueError('Reserved name or object array')
+        if (not key.isidentifier() or key in {'metadata_json', 'file', 'allow_pickle'}
+                or value.dtype.hasobject or value.dtype.kind not in 'biufcUS'):
+            raise ValueError('Invalid/reserved name or unsupported array dtype')
     text = json.dumps(metadata, ensure_ascii=False, allow_nan=False, sort_keys=True)
+    arrays = {'metadata_json': np.array(text), **arrays}
+    if len(arrays) > 32 or sum(a.nbytes for a in arrays.values()) > MAX_BYTES:
+        raise ValueError('Expanded archive too large')
     p = Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
-    with p.open('xb') as f:
-        np.savez_compressed(f, metadata_json=np.array(text), **arrays)
+    with atomic_output(p) as f:
+        # Dtypes above exclude pickle even on older supported NumPy releases.
+        np.savez_compressed(f, **arrays)
+        f.flush()
+        if f.tell() > MAX_BYTES:
+            raise ValueError('Archive exceeds 512 MiB limit')
+        with zipfile.ZipFile(f) as z:
+            if sum(i.file_size for i in z.infolist()) > MAX_BYTES:
+                raise ValueError('Expanded archive too large')
+
+
+def _validate_array_header(stream, size):
+    version = np.lib.format.read_magic(stream)
+    readers = {(1, 0): np.lib.format.read_array_header_1_0,
+               (2, 0): np.lib.format.read_array_header_2_0}
+    if version not in readers:
+        raise ValueError('Unsupported NPY format; use plain numeric or string arrays')
+    shape, _, dtype = readers[version](stream, max_header_size=10000)
+    if dtype.hasobject or dtype.kind not in 'biufcUS':
+        raise ValueError('Object/structured arrays are prohibited')
+    if any(n < 0 for n in shape):
+        raise ValueError('Invalid array shape')
+    count = math.prod(shape)
+    nbytes = count * dtype.itemsize
+    if count > MAX_BYTES or nbytes > MAX_BYTES or stream.tell() + nbytes != size:
+        raise ValueError('Array shape/size mismatch or expanded array too large')
+
+
+def _reject_json_constant(value):
+    raise ValueError(f'Nonfinite JSON value: {value}')
 
 
 def load_archive(path):
     p = Path(path)
     if p.stat().st_size > MAX_BYTES:
         raise ValueError('Archive exceeds 512 MiB limit')
-    with zipfile.ZipFile(p) as z:
-        entries = z.infolist()
-        if len(entries) > 32 or sum(i.file_size for i in entries) > MAX_BYTES:
-            raise ValueError('Expanded archive too large')
-        names = [i.filename for i in entries]
-        if len(set(names)) != len(names) or any('/' in n or not n.endswith('.npy') for n in names):
-            raise ValueError('Invalid archive entries')
-    with np.load(p, allow_pickle=False, max_header_size=10000) as z:
-        arrays = {k: z[k] for k in z.files}
+    try:
+        with zipfile.ZipFile(p) as z:
+            entries = z.infolist()
+            if len(entries) > 32 or sum(i.file_size for i in entries) > MAX_BYTES:
+                raise ValueError('Expanded archive too large')
+            names = [i.filename for i in entries]
+            if len(set(names)) != len(names) or any(
+                    not n.endswith('.npy') or not n[:-4].isidentifier() for n in names):
+                raise ValueError('Invalid archive entries')
+            # A tiny ZIP member can claim a huge NPY shape. Check all headers
+            # against actual payload sizes BEFORE NumPy allocates any array.
+            for entry in entries:
+                with z.open(entry) as stream:
+                    _validate_array_header(stream, entry.file_size)
+            arrays = {}
+            for entry in entries:
+                with z.open(entry) as stream:
+                    arrays[entry.filename[:-4]] = np.lib.format.read_array(
+                        stream, allow_pickle=False, max_header_size=10000)
+    except (zipfile.BadZipFile, EOFError, RuntimeError, NotImplementedError, zlib.error) as exc:
+        raise ValueError(f'Invalid or corrupted NPZ archive: {exc}') from exc
     raw = arrays.pop('metadata_json', None)
     if raw is None or raw.shape != () or raw.dtype.kind not in 'US':
         raise ValueError('Missing scalar metadata_json')
-    meta = json.loads(str(raw))
-    if not isinstance(meta, dict) or meta.get('schema_version') != SCHEMA:
+    meta = json.loads(str(raw), parse_constant=_reject_json_constant)
+    if (not isinstance(meta, dict) or type(meta.get('schema_version')) is not int
+            or meta['schema_version'] != SCHEMA):
         raise ValueError('Unsupported schema_version')
-    if any(a.dtype.kind == 'O' for a in arrays.values()):
-        raise ValueError('Object arrays are prohibited')
     return meta, arrays
 
 

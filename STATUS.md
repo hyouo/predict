@@ -1,19 +1,17 @@
-# Integrated research status
+# 项目状态
 
-Updated 2026-09-14. Read research/ACTIVE_ROUTE_ZH.md and research/INTEGRATION_POLICY.md before continuing. This update does not change the stable prediction package or its software version.
+更新：2026-10-14。`main` 是唯一维护版本，正常使用从 [README](README.md) 开始。
 
-## Integration
+## 当前软件
 
-The 29 pre-existing non-main branch trees are preserved exactly under archive/branch_snapshots. All corresponding commits remain reachable through the integration ancestry. No old branch was deleted, no forced update was used, and archived workflows are inert. Some historical branches contain only protocols/evidence, not full code; their exact scope is retained. The consolidated conversation workspace separately restores 15 complete source/small-result archives (3366 unchanged files) with hashes and an isolated research.py entry point. Those full restored archives are not silently claimed to have all been uploaded to Git.
+- 安装包：`perturb-predict`，Python API：`perturb_predict.TransferModel`。
+- 任务：单源、少样本目标校准的化学扰动响应预测；查询药物必须在源背景有实测响应。
+- 使用流程：离线 `demo` → 自有数据 `train` / `predict` / `evaluate`；固定 OP3 回放保留作工程验收。
+- 本轮：补齐许可、贡献指南、包元数据、安装检查与离线示例；加强文件持久化、损坏输入和失败记录处理。默认数值算法未更换。
+- 验收范围及实际运行记录：[OPEN_SOURCE_READINESS_ZH.md](docs/releases/OPEN_SOURCE_READINESS_ZH.md)。这不是新性能发行或独立生物学验证。
 
-## Scientific state
+## 历史与研究
 
-Retain v7 shared-response-prior/RBF and simple calibration/quality comparators. Incremental prior/quality gains are retrospective, not independent modern-SOTA superiority. Previously used OP3, Sci-Plex, L1000 and GSE101406 cohorts are exposed. The bounded TranSiGen author-core run is not the strongest canonical paper replication.
+旧分支通过 [归档清单](archive/branch-heads-20261014.json) 和主线提交历史保留；研究编号不作为另一套软件版本。以前的整合状态原文保存在 [历史状态](docs/history/STATUS_before_single_main.md)。
 
-v12 acquired the original multi-assay matrices and recovered16 reference records by exact cross-release identity. v13 audited native IDs and partial-identification ranges. Those tasks are complete within their declared scope and must not be restarted. Verified culture/aliquot links remain absent; condition-mean analysis can proceed under its own definition but cannot validate same-preparation functional state.
-
-## Active next gate
-
-Independent-preparation, query-excluded functional information beyond baseline and global sensitivity. v14's new bridge module designs which authenticated metadata links could reduce an empirical ambiguity interval, under an unverified one-to-one correspondence assumption. It creates no true pairing and no new biological observation. Endpoint sensitivity changes the priority list substantially; it is not an accuracy gain.
-
-Require a custodian-certified bridge or an independent paired resource before claiming functional-state recovery. Freeze tasks and costs before new confirmation; preserve same-information strong comparators. No new default model, Nature readiness, causal mechanism or population confidence statement is approved. No paid compute, email sending, automatic scientific release or unattended research.
+研究仍受 [ACTIVE_ROUTE_ZH.md](research/ACTIVE_ROUTE_ZH.md) 与 [INTEGRATION_POLICY.md](research/INTEGRATION_POLICY.md) 约束。独立制备桥接与新证据仍未验证；原始科学问题不因工程完善而解决。#17 继续作为独立证据关卡。没有自动科研循环、付费计算、作者邮件或性能发布。

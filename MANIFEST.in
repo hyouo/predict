@@ -1,0 +1,15 @@
+include README.md LICENSE THIRD_PARTY_NOTICES.md CONTRIBUTING.md SECURITY.md
+recursive-include docs/releases *.md
+recursive-include tests_release test_*.py
+exclude docs/releases/v0.1.0-acceptance-plan.md
+exclude docs/releases/VALIDATION_ZH.md
+prune archive
+prune research
+prune studies
+prune reports
+prune data
+prune runs
+prune src
+prune tools
+prune tests
+global-exclude __pycache__ *.py[cod]
