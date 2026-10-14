@@ -1,0 +1,34 @@
+name: 功能建议
+description: 提出范围明确的使用需求或工程改进
+title: "[Feature] "
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 要解决的问题
+      description: 谁在什么任务中遇到什么困难？已有流程在哪一步不足？
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 建议行为
+      description: 描述输入、输出和用户可观察到的改变。
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 验收方式
+      description: 如何确认改进有效？列出可复现的检查及可能的兼容性影响。
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 已考虑的替代方法
+  - type: textarea
+    id: research
+    attributes:
+      label: 研究范围或数据需求（如适用）
+      description: 涉及模型或数据时，说明任务、目标信息预算、对照与证据级别。

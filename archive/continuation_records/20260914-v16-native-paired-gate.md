@@ -1,0 +1,13 @@
+# v16: native paired-data gate
+
+Continuation of v15 and Issue #17. Do not repeat GSE101406 reference recovery, coupling bounds, branch integration or old kernel searches. Main predictor stays unchanged.
+
+## Acquisition and metadata gate
+Read the five exact public GEO GSE297075 assets listed in v15: processed h5ad, sparse count matrix, barcodes, features, and feature_reference. Preserve original bytes, HTTPS provenance, retrieval time, sizes and SHA256. No publisher checksum is presently available; do not claim authenticated checksums. Inspect native hash/culture/panel assignments and exact barcodes before training. Processed latent coordinates or full-cohort normalized expression are not admissible prediction inputs. RNA raw counts must be reconstructed from the original sparse matrix. The paper's methods specify culture-by-condition median rabbit-isotype subtraction; verify its numerical relationship to saved ADT fields, including panel2 where oYo3 is FOS, not isotype.
+
+## Narrow supporting scientific task
+Predict same-time phospho-ADT from same-cell RNA in an entirely held-out publisher-labelled culture. This is not future response prediction, unseen drug prediction or the original query-excluded functional-probe task. Three cultures, one pooled capture, two panels with structural missingness. Do not call them three donors or independent sequencing batches. The paper's biological findings remain attributed to its authors.
+
+After metadata inspection but before outcome scoring, lock a precise cohort and feature/target scale. Compare condition-only, condition plus technical inputs, and matched technical plus RNA ridge regression, with full culture holdout and source-only preprocessing. Keep panels separate, retain missing targets as not_assayed, and never use other phospho outcomes or total ADT including the target as technical input. Do not use all-data embeddings, phospho-defined clusters, or test response-based gene filtering. Report culture-by-condition errors, centered within-block information and bad outcomes. No cell-bootstrap population confidence claim with only three culture labels. Add frozen-prediction within-culture/condition shuffle diagnostics; these do not establish causality. Technical noise and processing dependence remain competing explanations.
+
+A second task may recover existing Live-seq baseline-to-future metadata as an independently declared positive control, without training on a tiny known discovery set and claiming new mechanism. New public data availability does not imply external confirmation once used for development. Preserve failures and exact accessed scope; no automatic merge, paid compute, email, unattended loop or publication-superiority claim.

@@ -9,7 +9,7 @@ from urllib.request import urlopen
 import hashlib
 import h5py
 import numpy as np
-from .io import digest, json_write, provenance, write_bundle, run_directory
+from .io import atomic_output, digest, json_write, provenance, write_bundle, run_directory
 
 DATA_SHA256 = '8eaf7e63adc68029e88184726b8545bc3836c3ef2a25b9185dc4e8b819537e59'
 DATA_URL = ('https://huggingface.co/datasets/theislab/chem-perturbridge/resolve/'
@@ -29,25 +29,19 @@ def fetch(path):
             raise ValueError('Existing OP3 cache is invalid; it was not overwritten')
         return {'cached': True, 'sha256': DATA_SHA256, 'bytes': p.stat().st_size}
     p.parent.mkdir(parents=True, exist_ok=True)
-    temp = p.with_name(p.name + '.partial')
-    created = False
-    try:
-        with temp.open('xb') as f:
-            created = True
-            with urlopen(DATA_URL, timeout=60) as response:
-                if not response.geturl().startswith('https://'):
-                    raise ValueError('Non-HTTPS redirect rejected')
-                total = 0
-                while chunk := response.read(1024**2):
-                    total += len(chunk)
-                    if total > MAX_DATA_BYTES: raise ValueError('Download exceeds 32 MiB')
-                    f.write(chunk)
-        if digest(temp) != DATA_SHA256: raise ValueError('Downloaded OP3 hash mismatch')
-        # Exclusive creation of final path, even under concurrent calls.
-        with p.open('xb') as out, temp.open('rb') as inp:
-            while chunk := inp.read(1024**2): out.write(chunk)
-    finally:
-        if created: temp.unlink(missing_ok=True)
+    with atomic_output(p, prefix='.download-') as f:
+        hasher = hashlib.sha256()
+        with urlopen(DATA_URL, timeout=60) as response:
+            if not response.geturl().startswith('https://'):
+                raise ValueError('Non-HTTPS redirect rejected')
+            total = 0
+            while chunk := response.read(1024**2):
+                total += len(chunk)
+                if total > MAX_DATA_BYTES: raise ValueError('Download exceeds 32 MiB')
+                f.write(chunk)
+                hasher.update(chunk)
+        if hasher.hexdigest() != DATA_SHA256:
+            raise ValueError('Downloaded OP3 hash mismatch')
     return {'cached': False, 'sha256': DATA_SHA256, 'bytes': p.stat().st_size}
 
 

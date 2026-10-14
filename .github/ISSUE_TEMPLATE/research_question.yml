@@ -1,0 +1,34 @@
+name: 研究问题
+description: 讨论数据合同、可复现性、研究假设或证据边界
+title: "[Research] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        请先阅读 STATUS.md 和 research/ACTIVE_ROUTE_ZH.md。公开数据重放或合成检查不能视为新的独立生物学验证。
+  - type: textarea
+    id: question
+    attributes:
+      label: 具体问题与关联记录
+      description: 指向相关 issue、协议、文件或结果，并说明仍未解决的部分。
+    validations:
+      required: true
+  - type: textarea
+    id: task
+    attributes:
+      label: 任务与允许的信息
+      description: 区分未见配对、背景、药物与少样本校准；说明处理、对照、探针与重复预算。
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: 证据与限制
+      description: 说明来源、单位、划分、独立性、已用于开发的数据、缺失信息及失败结果。
+    validations:
+      required: true
+  - type: textarea
+    id: next_step
+    attributes:
+      label: 建议的下一步
+      description: 给出能回答问题的有限验证，不承诺性能提升或论文等级。

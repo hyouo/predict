@@ -1,17 +1,42 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77.0.3"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "perturb-predict"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Auditable few-shot quantitative perturbation prediction research baseline"
-readme = "docs/releases/QUICKSTART_ZH.md"
+readme = "README.md"
 requires-python = ">=3.11"
 dependencies = ["numpy>=2.0,<3", "h5py>=3.10,<4"]
+license = "MIT"
+license-files = ["LICENSE", "THIRD_PARTY_NOTICES.md"]
+keywords = ["perturbation", "gene-expression", "few-shot", "research"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Science/Research",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: Scientific/Engineering :: Bio-Informatics",
+]
+
+[project.urls]
+Homepage = "https://github.com/hyouo/predict"
+Documentation = "https://github.com/hyouo/predict/blob/main/docs/releases/QUICKSTART_ZH.md"
+Repository = "https://github.com/hyouo/predict"
+Issues = "https://github.com/hyouo/predict/issues"
+
+[project.optional-dependencies]
+dev = ["build>=1.2,<2", "twine>=6,<7"]
 
 [project.scripts]
 perturb-predict = "perturb_predict.cli:main"
 
 [tool.setuptools]
 packages = ["perturb_predict"]
+
+[tool.setuptools.dynamic]
+version = {attr = "perturb_predict.__version__"}

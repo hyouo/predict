@@ -1,0 +1,48 @@
+name: 软件问题
+description: 报告安装、命令、数据校验或运行结果的可复现问题
+title: "[Bug] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        请提供最小复现，不上传私人数据、凭据或大矩阵。安全漏洞请先阅读 SECURITY.md。
+  - type: input
+    id: version
+    attributes:
+      label: 版本或提交
+      description: 提供 perturb-predict --version 和 git rev-parse HEAD（如适用）。
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: 运行环境
+      description: 操作系统、Python、NumPy、h5py 版本，以及安装命令。
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: 最小复现步骤
+      description: 给出完整命令、必要的数据结构或可共享的小样例，说明是否可用离线 demo 复现。
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 预期行为
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: 实际行为与错误日志
+      description: 包含退出码或完整 traceback；去掉敏感路径和内容，不只上传截图。
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: input
+    attributes:
+      label: 输入与数据合同（如适用）
+      description: 说明输入种类、形状、单位、基因 ID、背景、剂量、时间；不要粘贴受限数据。

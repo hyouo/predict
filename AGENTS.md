@@ -2,9 +2,11 @@
 
 Begin each session by reading STATUS.md, docs/ROADMAP.md, open issues, and recent commits. The user's primary language is Chinese. Prefer substantive results to routine progress notifications. This repository stores public research decisions and execution records, not private reasoning transcripts or personal credentials.
 
+`main` is the sole maintained software version. The installable product is `perturb_predict/`; `src/`, `studies/`, `research/`, and `archive/` retain research code/evidence, not competing installation targets. Use short-lived branches/PRs for changes and remove them after integration with all needed history preserved. Do not restore permanent version branches by default.
+
 ## Scientific contract
 
-- Original goal: quantitative chemical-response prediction in an unseen target context, using only allowed untreated baseline/source information. Current v0.7 code is an auxiliary phosphoprotein few-shot baseline, not an RNA zero-shot model.
+- Original goal: quantitative chemical-response prediction in an unseen target context, using only allowed untreated baseline/source information. The stable package is a single-source few-shot RNA baseline. Historical v0.7 code in `src/` is an auxiliary phosphoprotein baseline. Neither supplies unseen-context RNA zero-shot validation.
 - Distinguish unseen pairs, unseen contexts, unseen chemicals, mechanism/scaffold blocking and few-shot calibration. Count every target treatment/control/probe in the relevant budget. Do not silently change the task.
 - Never turn missing labels into biological zeros. Audit units, normalization, gene identifiers, biological replicates, wells, donors, batches and shared controls before modeling.
 - Preserve same-information simple baselines. Report absolute error, centered contrasts, mean/bias error, response-specific discrimination and worst-context failure. Do not turn an engineering speedup, extra data or a classical method into a novelty claim.
@@ -15,6 +17,8 @@ Begin each session by reading STATUS.md, docs/ROADMAP.md, open issues, and recen
 ## Execution contract
 
 Use Python 3.13.5 and requirements.txt for baseline reproduction. Set OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1. Run `python -m unittest discover -s tests -v` after preparing the auxiliary asset. Use `python -m tools.smoke --output runs/<new-id>` for the integration check.
+
+For stable-package changes also run `python -m unittest discover -s tests_release -v`, build the sdist/wheel, and test the installed wheel and `perturb-predict demo --out <new-directory>` from outside the checkout. The demo is synthetic software verification only. Keep dependency-free history checks available through `python -m tools.verify_history` in a full Git checkout.
 
 Every new scientific run needs a new directory and a protocol committed before test evaluation. Record Git commit/dirty state, input SHA256, code hashes, seeds, split IDs, target information budget, parameters, metrics and failure status. Do not overwrite reports/v0.7 or docs/history/v0.7_import.json. Historical entrypoints overwrite outputs: use an isolated worktree until they are modernized.
 

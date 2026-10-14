@@ -53,10 +53,15 @@ def predict(model_path, data, out):
 def read_predictions(path):
     p = Path(path)
     completion = p.parent / 'COMPLETE.json'
-    if not completion.exists() or json.loads(completion.read_text()).get('status') != 'complete':
+    if not completion.exists() or (p.parent / 'FAILED.json').exists():
+        raise ValueError('Prediction run is incomplete or failed')
+    complete = json.loads(completion.read_text(encoding='utf-8'))
+    if not isinstance(complete, dict) or complete.get('status') != 'complete':
         raise ValueError('Prediction run is incomplete or failed')
     freeze_path = p.parent / 'freeze.json'
     freeze = json.loads(freeze_path.read_text(encoding='utf-8'))
+    if not isinstance(freeze, dict):
+        raise ValueError('Malformed prediction freeze manifest')
     if freeze.get('prediction_sha256') != digest(p): raise ValueError('Frozen prediction SHA256 mismatch')
     meta, a = load_archive(p)
     if meta.get('kind') != 'prediction' or set(a) != {'prediction', 'source_copy', 'ids', 'genes'}:
@@ -66,10 +71,15 @@ def read_predictions(path):
     for k in ('prediction', 'source_copy'):
         a[k] = matrix(a[k], k)
         if a[k].shape != (len(a['ids']), len(a['genes'])): raise ValueError('Prediction shape mismatch')
-    if set(a['ids']) & set(meta.get('model_calibration_ids', [])):
+    calibration_ids = identifiers(meta.get('model_calibration_ids'), 'model_calibration_ids')
+    if set(a['ids']) & set(calibration_ids):
         raise ValueError('Calibration/query overlap')
-    if freeze.get('contract') != meta['contract']:
-        raise ValueError('Freeze/array metadata contract mismatch')
+    for key in ('schema_version', 'kind', 'contract', 'model_calibration_ids',
+                'model_sha256', 'query_sha256', 'query_target_labels_read'):
+        if key not in meta or freeze.get(key) != meta[key]:
+            raise ValueError(f'Freeze/array metadata mismatch: {key}')
+    if meta['query_target_labels_read'] is not False:
+        raise ValueError('Predictions must be frozen without reading target labels')
     return meta, a
 
 
@@ -168,9 +178,11 @@ def benchmark(data, out, *, accept_conditional=False, accept_public_reuse=False)
 
 
 def main(argv=None):
-    ap = argparse.ArgumentParser(description='Predict v0.1.0: auditable few-shot RNA effect baseline, not SOTA.')
+    ap = argparse.ArgumentParser(description='Predict: auditable few-shot RNA effect research baseline.')
     ap.add_argument('--version', action='version', version=f'perturb-predict {__version__}')
     sub = ap.add_subparsers(dest='command', required=True)
+    demo_p = sub.add_parser('demo', help='Run an offline synthetic software example (not biological evidence)')
+    demo_p.add_argument('--out', type=Path, required=True, help='New output directory; never overwritten')
     fetch_p = sub.add_parser('fetch-op3', help='Download and verify fixed public OP3 data, <=32 MiB')
     fetch_p.add_argument('--out', type=Path, required=True)
     for command in ('prepare-op3', 'benchmark-op3'):
@@ -188,7 +200,10 @@ def main(argv=None):
     p.add_argument('--accept-public-reuse', action='store_true')
     a = ap.parse_args(argv)
     try:
-        if a.command == 'fetch-op3':
+        if a.command == 'demo':
+            from .demo import run_demo
+            result = run_demo(a.out)
+        elif a.command == 'fetch-op3':
             from .op3 import fetch
             result = fetch(a.out)
         elif a.command == 'prepare-op3':
@@ -207,6 +222,10 @@ def main(argv=None):
     except (OSError, ValueError, KeyError, PermissionError) as exc:
         print(json.dumps({'status': 'error', 'type': type(exc).__name__, 'message': str(exc)}, ensure_ascii=False), file=sys.stderr)
         return 2
+    except KeyboardInterrupt:
+        print(json.dumps({'status': 'error', 'type': 'KeyboardInterrupt',
+                          'message': 'Operation interrupted; use a new output directory to retry.'}), file=sys.stderr)
+        return 130
 
 
 if __name__ == '__main__':

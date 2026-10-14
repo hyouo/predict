@@ -1,0 +1,29 @@
+name: Consolidate preserved branches into main
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/consolidate-branches-20261014.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: consolidate-preserved-branches
+  cancel-in-progress: false
+jobs:
+  cleanup:
+    if: github.repository == 'hyouo/predict' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: main
+          fetch-depth: 0
+          # Only this finite maintenance job needs a token to delete preserved refs.
+          persist-credentials: true
+      - name: Verify every original commit and unchanged snapshot
+        run: python3 -m tools.verify_history
+      - name: Preview exact branch cleanup
+        run: python3 -m tools.prune_branches
+      - name: Delete only preserved, unchanged branch refs with atomic leases
+        run: python3 -m tools.prune_branches --apply

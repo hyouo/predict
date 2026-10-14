@@ -21,6 +21,9 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
           persist-credentials: false
+          fetch-depth: 0
+      - name: Verify preserved histories and unchanged snapshots
+        run: python3 -m tools.verify_history
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
           python-version: '3.13.5'
@@ -30,6 +33,10 @@ jobs:
         run: python -m tools.assets --asset auxiliary
       - name: Run unit and mathematical checks
         run: python -m unittest discover -s tests -v
+      - name: Test exclusive output and run-finalization contracts
+        run: python -m unittest discover -s tests_release -p 'test_io_atomic.py' -v
+      - name: Test integrated bridge-design invariants (synthetic only)
+        run: python -m unittest discover -s studies/bridge_design_v14/tests -v
       - name: Measured-data integration check (not biological validation)
         run: python -m tools.smoke --output runs/ci-smoke
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
