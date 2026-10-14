@@ -21,12 +21,16 @@
 | 独立安装 | 在仓库外导入已安装包，执行发行测试和离线 demo，避免源码路径掩盖缺文件问题 | 独立虚拟环境安装 wheel，仓库外导入 site-packages；发行测试 78/78 通过，`perturb-predict demo` 完成。 |
 | 合成演示 | 无网络也可完成；训练/查询分离；先冻结预测再评分；汇总明确标注合成来源和非独立证据 | 5 项 demo 回归通过；固定种子、完整流水线、查询标签隔离、拒绝覆盖及失败标记均已检查。 |
 | 运行产物 | 拒绝覆盖已存在输出；保留完成或可记录的失败状态；产物哈希与实际文件一致 | 继承的 5 项 JSON 原子写入测试、新增 17 项归档/状态/下载边界及 4 项通用下载竞争测试通过。 |
-| 回归检查 | 发行测试、相关原基线测试和桥接设计检查按变更范围执行；失败或跳过逐项说明 | `unittest discover -s tests_release -v` 78/78；`-s tests -v` 54/54；`-s studies/bridge_design_v14/tests -v` 18/18；`tools.smoke` 完成。 |
-| 兼容性 CI | Linux Python 3.11、3.12、3.13、3.14，以及 Windows Python 3.13 的安装后测试有真实运行结果 | 工作流已配置；本地只验证 Linux Python 3.13.5，远端矩阵结果等待本次 PR 的 Actions。 |
-| 文档与模板 | 文档中的命令、路径和相对链接与当前代码一致；issue 模板 YAML 可解析 | 47 个相对文件链接、4 个 issue YAML 与本地标题锚点检查通过；`git diff --check` 通过。 |
-| 许可与归档 | MIT 文本与官方标准一致；第三方 notice 未被改写；原归档树和科研状态不被此次工程改动覆盖 | 标准 MIT 文本已核对，原 data/CELLNOPT_LICENSE.txt 未改；36 个旧分支 SHA 与 29 份精确快照已记录，合入前以 tools.verify_history 核验祖先关系。 |
+| 回归检查 | 发行测试、相关原基线测试和桥接设计检查按变更范围执行；失败或跳过逐项说明 | `unittest discover -s tests_release -v` 78/78；`-s tests -v` 66/66（含 12 项分支清理检查）；`-s studies/bridge_design_v14/tests -v` 18/18；`tools.smoke` 完成。 |
+| 兼容性 CI | Linux Python 3.11、3.12、3.13、3.14，以及 Windows Python 3.13 的安装后测试有真实运行结果 | [Package CI 38562956677](https://github.com/hyouo/predict/actions/runs/38562956677) 的 5 个环境全部通过（提交 `7d727c2`）；固定 OP3 与原基线也分别通过 [38562956697](https://github.com/hyouo/predict/actions/runs/38562956697)、[38562956658](https://github.com/hyouo/predict/actions/runs/38562956658)。 |
+| 文档与模板 | 文档中的命令、路径和相对链接与当前代码一致；issue 模板 YAML 可解析 | 57 个相对文件链接、8 个活动 YAML 与本地标题锚点检查通过；`git diff --check` 通过。 |
+| 许可与归档 | MIT 文本与官方标准一致；第三方 notice 未被改写；原归档树和科研状态不被此次工程改动覆盖 | 标准 MIT 文本已核对，原 data/CELLNOPT_LICENSE.txt 未改；`tools.verify_history` 已验证 36 个旧分支头均为整合提交祖先、29 份精确快照树未变；远端引用清理由合入后的独立维护工作流执行并检查。 |
 
 本地运行无法替代未执行的操作系统或 Python 版本检查。网络受限、依赖不可用或 CI 未执行时，保留明确的阻塞记录，不以旧成功记录或配置存在来推断通过。
+
+## 分支收敛
+
+所有历史头在整合提交的多父提交链中保留，分支名称与树 SHA 登记于 `archive/branch-heads-20261014.json`。只保留 `main` 为维护版本。清理工具默认预览，正式删除使用原子推送和逐引用预期 SHA 检查；12 项本地回归覆盖默认预览、未保存提交拒绝、未知分支拒绝、真实临时 Git 仓库删除，以及竞争更新导致整批删除被拒绝。操作步骤见 [归档说明](../../archive/README.md)，实际远端清理结果以 [维护工作流](https://github.com/hyouo/predict/actions/workflows/consolidate-branches-20261014.yml) 为准。
 
 ## 固定数据回放
 
