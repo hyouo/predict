@@ -45,6 +45,7 @@ perturb-predict demo --out runs/demo-001
 | 理解已记录结果及其局限 | [历史验收记录](docs/releases/VALIDATION_ZH.md) |
 | 查看本次开源工程验收范围 | [开源就绪验收](docs/releases/OPEN_SOURCE_READINESS_ZH.md) |
 | 报告问题或贡献代码 | [贡献指南](CONTRIBUTING.md) · [Issues](https://github.com/hyouo/predict/issues) |
+| 联系项目维护者 | <hy200304@gmail.com> |
 | 报告安全问题 | [安全策略](SECURITY.md) |
 
 公开 OP3 曾用于方法开发，重放它只验证工程可复现性。独立制备或外部研究中的有效性仍是待解决的科学关卡，见 [当前状态](STATUS.md) 和 [研究路线](research/ACTIVE_ROUTE_ZH.md)。历史材料见 [历史归档](archive/README.md)；归档的存在不代表其中所有实现或结论均通过当前软件验收。
